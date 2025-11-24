@@ -1,0 +1,3 @@
+<Solution>
+  <Project Path="NServiceBus.Envelope.CloudEvents/NServiceBus.Envelope.CloudEvents.csproj" />
+</Solution>
