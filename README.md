@@ -1,2 +1,2 @@
-# NServiceBus.Envelopes.CloudEvents
+# NServiceBus.Envelope.CloudEvents
 Envelope support for CloudEvents
