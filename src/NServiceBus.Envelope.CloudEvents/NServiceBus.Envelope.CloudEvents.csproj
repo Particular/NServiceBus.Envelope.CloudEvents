@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NServiceBus" Version="9.2.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Particular.Packaging" Version="4.2.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PackageId>NServiceBus.Envelope.CloudEvents</PackageId>
+    <Description>Envelope support for CloudEvents</Description>
+  </PropertyGroup>
+
+</Project>

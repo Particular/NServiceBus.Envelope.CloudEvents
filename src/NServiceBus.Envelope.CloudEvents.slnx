@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="NServiceBus.Envelope.CloudEvents.Tests/NServiceBus.Envelope.CloudEvents.Tests.csproj" Id="fced5d10-5994-4086-8a3c-023068ead989" />
+  <Project Path="NServiceBus.Envelope.CloudEvents/NServiceBus.Envelope.CloudEvents.csproj" />
+</Solution>
