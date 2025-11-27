@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus;
 
 using Configuration.AdvancedExtensibility;
+using Envelope.CloudEvents;
 
 /// <summary>
 /// 
@@ -16,6 +17,8 @@ public static class CloudEventsEndpointConfigurationExtensions
     /// <returns>The <see cref="CloudEventsConfiguration"/> instance to customize CloudEvents support</returns>
     public static CloudEventsConfiguration EnableCloudEvents(this EndpointConfiguration configuration)
     {
+        configuration.EnableFeature<CloudEventsFeature>();
+
         var config = new CloudEventsConfiguration();
         var settings = configuration.GetSettings();
         settings.Set(CloudEventsSetting, config);
