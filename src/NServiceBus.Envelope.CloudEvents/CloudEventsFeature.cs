@@ -8,6 +8,6 @@ class CloudEventsFeature : Feature
 {
     protected override void Setup(FeatureConfigurationContext context)
     {
-        context.Services.AddSingleton<CloudEventJsonStructuredEnvelopeHandler>();
+        context.Services.AddSingleton<IEnvelopeHandler, CloudEventJsonStructuredEnvelopeHandler>();
     }
 }
