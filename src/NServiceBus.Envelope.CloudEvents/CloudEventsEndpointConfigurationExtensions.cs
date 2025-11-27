@@ -8,6 +8,7 @@ using Configuration.AdvancedExtensibility;
 public static class CloudEventsEndpointConfigurationExtensions
 {
     internal const string CloudEventsSetting = "NServiceBus.Envelope.CloudEvents";
+
     /// <summary>
     /// Add CloudEvents envelopes support to this endpoint
     /// </summary>
