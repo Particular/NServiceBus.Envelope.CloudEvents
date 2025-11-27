@@ -1,4 +1,4 @@
-namespace NServiceBus.NServiceBus;
+namespace NServiceBus.Envelope.CloudEvents;
 
 using System.Text;
 using System.Text.Json;
@@ -11,10 +11,16 @@ class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
     const string DATA_PROPERTY = "data";
     const string DATA_BASE64_PROPERTY = "data_base64";
     const string ID_PROPERTY = "id";
+    const string SOURCE_PROPERTY = "source";
+    const string TIME_PROPERTY = "time";
     const string JSON_SUFFIX = "json";
     const string SUPPORTED_CONTENT_TYPE = "application/cloudevents+json";
 
+    static readonly string[] HEADERS_TO_IGNORE = [DATA_PROPERTY, DATA_BASE64_PROPERTY];
+    static readonly string[] REQUIRED_PROPERTIES = [ID_PROPERTY, SOURCE_PROPERTY, TYPE_PROPERTY, DATA_CONTENT_TYPE_PROPERTY];
+
     static readonly JsonSerializerOptions options = new() { PropertyNameCaseInsensitive = true };
+
 
     public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body) UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders, ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
     {
@@ -49,16 +55,12 @@ class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
 
     static Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders, JsonDocument receivedCloudEvent)
     {
-        var propertiesToIgnore = new[] { DATA_PROPERTY, DATA_BASE64_PROPERTY };
-
-        var id = ExtractId(receivedCloudEvent);
-
         var headersCopy = existingHeaders.ToDictionary(k => k.Key, k => k.Value);
 
         foreach (var kvp in receivedCloudEvent
                      .RootElement
                      .EnumerateObject()
-                     .Where(p => !propertiesToIgnore.Contains(p.Name))
+                     .Where(p => !HEADERS_TO_IGNORE.Contains(p.Name))
                      .Where(p => p.Value.ValueKind != JsonValueKind.Null))
         {
             headersCopy[kvp.Name] = kvp.Value.ValueKind == JsonValueKind.String
@@ -66,12 +68,21 @@ class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
                 : kvp.Value.GetRawText();
         }
 
-        headersCopy[Headers.MessageId] = id;
+        headersCopy[Headers.MessageId] = ExtractId(receivedCloudEvent);
+        headersCopy[Headers.ReplyToAddress] = ExtractSource(receivedCloudEvent);
+        if (receivedCloudEvent.RootElement.TryGetProperty(TIME_PROPERTY, out var time))
+        {
+            headersCopy[Headers.TimeSent] = time.GetString();
+        }
 
         return headersCopy;
     }
 
-    static string ExtractId(JsonDocument receivedCloudEvent) => receivedCloudEvent.RootElement.GetProperty(ID_PROPERTY).GetString();
+    static string ExtractId(JsonDocument receivedCloudEvent) => ExtractHeader(receivedCloudEvent, ID_PROPERTY);
+
+    static string ExtractSource(JsonDocument receivedCloudEvent) => ExtractHeader(receivedCloudEvent, SOURCE_PROPERTY);
+
+    static string ExtractHeader(JsonDocument receivedCloudEvent, string property) => receivedCloudEvent.RootElement.GetProperty(property).GetString();
 
     static void ThrowIfInvalidCloudEvent(JsonDocument receivedCloudEvent)
     {
@@ -80,7 +91,7 @@ class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
             throw new NotSupportedException("Couldn't deserialize the message into a cloud event");
         }
 
-        foreach (var property in new string[] { DATA_CONTENT_TYPE_PROPERTY, ID_PROPERTY, TYPE_PROPERTY })
+        foreach (var property in REQUIRED_PROPERTIES)
         {
             if (!receivedCloudEvent.RootElement.TryGetProperty(property, out _))
             {
@@ -104,7 +115,7 @@ class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
 
     static void ThrowIfInvalidMessage(IDictionary<string, string> headers)
     {
-        if (headers.TryGetValue(Headers.ContentType, out string value))
+        if (headers.TryGetValue(Headers.ContentType, out var value))
         {
             if (value != SUPPORTED_CONTENT_TYPE)
             {

@@ -29,7 +29,8 @@ public class CloudEventJsonStructuredEnvelopeHandlerTests
             ["id"] = Guid.NewGuid().ToString(),
             ["some_other_property"] = "some_other_value",
             ["data"] = "{}",
-            ["datacontenttype"] = "application/json"
+            ["datacontenttype"] = "application/json",
+            ["time"] = "2023-10-10T10:00:00Z"
         };
 
         NativeHeaders = new Dictionary<string, string>
@@ -108,6 +109,7 @@ public class CloudEventJsonStructuredEnvelopeHandlerTests
     [Test]
     [TestCase("type")]
     [TestCase("id")]
+    [TestCase("source")]
     [TestCase("datacontenttype")]
     public void Should_throw_when_property_is_missing(string property) =>
         Assert.Throws<NotSupportedException>(() =>
@@ -158,6 +160,8 @@ public class CloudEventJsonStructuredEnvelopeHandlerTests
             Assert.That(actual.MessageId, Is.EqualTo(Payload["id"]));
             Assert.That(actual.NativeMessageId, Is.EqualTo(NativeMessageId));
             Assert.That(actual.Headers[Headers.MessageId], Is.EqualTo(Payload["id"]));
+            Assert.That(actual.Headers[Headers.ReplyToAddress], Is.EqualTo(Payload["source"]));
+            Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo(Payload["time"]));
             Assert.That(actual.Headers["id"], Is.EqualTo(Payload["id"]));
             Assert.That(actual.Headers["type"], Is.EqualTo(Payload["type"]));
             Assert.That(actual.Headers["source"], Is.EqualTo(Payload["source"]));
