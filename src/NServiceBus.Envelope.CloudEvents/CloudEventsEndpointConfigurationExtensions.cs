@@ -3,16 +3,16 @@
 using Configuration.AdvancedExtensibility;
 
 /// <summary>
-/// TODO
+/// 
 /// </summary>
 public static class CloudEventsEndpointConfigurationExtensions
 {
     internal const string CloudEventsSetting = "NServiceBus.Envelope.CloudEvents";
     /// <summary>
-    /// TODO
+    /// Add CloudEvents envelopes support to this endpoint
     /// </summary>
-    /// <param name="configuration">TODO</param>
-    /// <returns>TODO</returns>
+    /// <param name="configuration">The current endpoint configuration</param>
+    /// <returns>The <see cref="CloudEventsConfiguration"/> instance to customize CloudEvents support</returns>
     public static CloudEventsConfiguration EnableCloudEvents(this EndpointConfiguration configuration)
     {
         var config = new CloudEventsConfiguration();
