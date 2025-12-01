@@ -13,9 +13,9 @@ using Transport;
 public class CloudEventAmqpBinaryEnvelopeHandlerTests
 {
     readonly string NativeMessageId = Guid.NewGuid().ToString();
-    Dictionary<string, string> NativeHeaders;
+    Dictionary<string, string> NativeHeaders = [];
     ReadOnlyMemory<byte> Body;
-    CloudEventAmqpBinaryEnvelopeHandler envelopeHandler;
+    CloudEventAmqpBinaryEnvelopeHandler envelopeHandler = new();
 
     [SetUp]
     public void SetUp()
@@ -80,7 +80,7 @@ public class CloudEventAmqpBinaryEnvelopeHandlerTests
 
     IncomingMessage RunEnvelopHandlerTest()
     {
-        (Dictionary<string, string> convertedHeader, ReadOnlyMemory<byte> convertedBody) = envelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, null, Body);
+        (Dictionary<string, string> convertedHeader, ReadOnlyMemory<byte> convertedBody) = envelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), Body);
         return new IncomingMessage(NativeMessageId, convertedHeader, convertedBody);
     }
 

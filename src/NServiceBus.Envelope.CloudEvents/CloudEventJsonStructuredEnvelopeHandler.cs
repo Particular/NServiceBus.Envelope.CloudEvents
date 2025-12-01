@@ -72,7 +72,7 @@ class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
         headersCopy[Headers.ReplyToAddress] = ExtractSource(receivedCloudEvent);
         if (receivedCloudEvent.RootElement.TryGetProperty(TIME_PROPERTY, out var time))
         {
-            headersCopy[Headers.TimeSent] = time.GetString();
+            headersCopy[Headers.TimeSent] = time.GetString()!;
         }
 
         return headersCopy;
@@ -82,9 +82,9 @@ class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
 
     static string ExtractSource(JsonDocument receivedCloudEvent) => ExtractHeader(receivedCloudEvent, SOURCE_PROPERTY);
 
-    static string ExtractHeader(JsonDocument receivedCloudEvent, string property) => receivedCloudEvent.RootElement.GetProperty(property).GetString();
+    static string ExtractHeader(JsonDocument receivedCloudEvent, string property) => receivedCloudEvent.RootElement.GetProperty(property).GetString()!;
 
-    static void ThrowIfInvalidCloudEvent(JsonDocument receivedCloudEvent)
+    static void ThrowIfInvalidCloudEvent(JsonDocument? receivedCloudEvent)
     {
         if (receivedCloudEvent == null)
         {
@@ -110,7 +110,7 @@ class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
     {
         var receivedCloudEvent = JsonSerializer.Deserialize<JsonDocument>(body.Span, options);
         ThrowIfInvalidCloudEvent(receivedCloudEvent);
-        return receivedCloudEvent;
+        return receivedCloudEvent!;
     }
 
     static void ThrowIfInvalidMessage(IDictionary<string, string> headers)

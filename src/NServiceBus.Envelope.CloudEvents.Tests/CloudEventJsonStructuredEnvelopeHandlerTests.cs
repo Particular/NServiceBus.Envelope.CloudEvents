@@ -12,11 +12,11 @@ using Transport;
 [TestFixture]
 public class CloudEventJsonStructuredEnvelopeHandlerTests
 {
-    string NativeMessageId;
-    Dictionary<string, string> NativeHeaders;
-    Dictionary<string, object> Payload;
+    string NativeMessageId = "";
+    Dictionary<string, string> NativeHeaders = [];
+    Dictionary<string, object> Payload = [];
     ReadOnlyMemory<byte> Body;
-    CloudEventJsonStructuredEnvelopeHandler envelopeHandler;
+    CloudEventJsonStructuredEnvelopeHandler envelopeHandler = new();
 
     [SetUp]
     public void SetUp()
@@ -71,7 +71,7 @@ public class CloudEventJsonStructuredEnvelopeHandlerTests
         Assert.Multiple(() =>
         {
             AssertTypicalFields(actual);
-            Assert.That(actual.Body.Span.SequenceEqual(Encoding.UTF8.GetBytes(Payload["data"].ToString())));
+            Assert.That(actual.Body.Span.SequenceEqual(Encoding.UTF8.GetBytes(Payload["data"].ToString()!)));
         });
     }
 
@@ -149,7 +149,7 @@ public class CloudEventJsonStructuredEnvelopeHandlerTests
     {
         string serializedBody = JsonSerializer.Serialize(Payload);
         var fullBody = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(serializedBody));
-        (Dictionary<string, string> convertedHeader, ReadOnlyMemory<byte> convertedBody) = envelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, null, fullBody);
+        (Dictionary<string, string> convertedHeader, ReadOnlyMemory<byte> convertedBody) = envelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), fullBody);
         return new IncomingMessage(NativeMessageId, convertedHeader, convertedBody);
     }
 
