@@ -4,14 +4,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Extensibility;
+using Logging;
 
 class CloudEventHttpBinaryEnvelopeHandler : IEnvelopeHandler
 {
+    static readonly ILog Log = LogManager.GetLogger<CloudEventHttpBinaryEnvelopeHandler>();
+
     const string HEADER_PREFIX = "ce-";
     const string TYPE_PROPERTY = HEADER_PREFIX + "type";
     const string ID_PROPERTY = HEADER_PREFIX + "id";
     const string SOURCE_PROPERTY = HEADER_PREFIX + "source";
     const string TIME_PROPERTY = HEADER_PREFIX + "time";
+    const string VERSION_PROPERTY = "specversion";
+    const string SUPPORTED_VERSION = "1.0";
 
     static readonly string[] REQUIRED_HEADERS = [ID_PROPERTY, SOURCE_PROPERTY, TYPE_PROPERTY];
 
@@ -53,6 +58,25 @@ class CloudEventHttpBinaryEnvelopeHandler : IEnvelopeHandler
         {
             throw new NotSupportedException(
                 $"Missing headers: {string.Join(",", REQUIRED_HEADERS.Where(h => !headers.ContainsKey(h)))}");
+        }
+
+        if (headers.TryGetValue(VERSION_PROPERTY, out var version))
+        {
+            if (version != SUPPORTED_VERSION)
+            {
+                if (Log.IsWarnEnabled)
+                {
+                    Log.WarnFormat("Unexpected CloudEvent version property value {0} for message {1}",
+                        version, headers[ID_PROPERTY]);
+                }
+            }
+        }
+        else
+        {
+            if (Log.IsWarnEnabled)
+            {
+                Log.WarnFormat("CloudEvent version property is missing for message id {0}", headers[ID_PROPERTY]);
+            }
         }
     }
 

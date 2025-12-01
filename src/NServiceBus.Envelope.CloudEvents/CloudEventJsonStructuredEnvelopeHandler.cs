@@ -3,9 +3,12 @@ namespace NServiceBus.Envelope.CloudEvents;
 using System.Text;
 using System.Text.Json;
 using Extensibility;
+using Logging;
 
 class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
 {
+    static readonly ILog Log = LogManager.GetLogger<CloudEventJsonStructuredEnvelopeHandler>();
+
     const string TYPE_PROPERTY = "type";
     const string DATA_CONTENT_TYPE_PROPERTY = "datacontenttype";
     const string DATA_PROPERTY = "data";
@@ -13,14 +16,15 @@ class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
     const string ID_PROPERTY = "id";
     const string SOURCE_PROPERTY = "source";
     const string TIME_PROPERTY = "time";
+    const string VERSION_PROPERTY = "specversion";
     const string JSON_SUFFIX = "json";
+    const string SUPPORTED_VERSION = "1.0";
     const string SUPPORTED_CONTENT_TYPE = "application/cloudevents+json";
 
     static readonly string[] HEADERS_TO_IGNORE = [DATA_PROPERTY, DATA_BASE64_PROPERTY];
     static readonly string[] REQUIRED_PROPERTIES = [ID_PROPERTY, SOURCE_PROPERTY, TYPE_PROPERTY, DATA_CONTENT_TYPE_PROPERTY];
 
     static readonly JsonSerializerOptions options = new() { PropertyNameCaseInsensitive = true };
-
 
     public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body) UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders, ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
     {
@@ -103,6 +107,27 @@ class CloudEventJsonStructuredEnvelopeHandler : IEnvelopeHandler
             !receivedCloudEvent.RootElement.TryGetProperty(DATA_PROPERTY, out _))
         {
             throw new NotSupportedException($"Message lacks both {DATA_PROPERTY} and {DATA_BASE64_PROPERTY} property");
+        }
+
+        if (receivedCloudEvent.RootElement.TryGetProperty(VERSION_PROPERTY, out var version))
+        {
+            var versionValue = version.GetString();
+
+            if (versionValue != SUPPORTED_VERSION)
+            {
+                if (Log.IsWarnEnabled)
+                {
+                    Log.WarnFormat("Unexpected CloudEvent version property value {0} for message {1}",
+                        versionValue, receivedCloudEvent.RootElement.GetProperty(ID_PROPERTY).GetString());
+                }
+            }
+        }
+        else
+        {
+            if (Log.IsWarnEnabled)
+            {
+                Log.WarnFormat("CloudEvent version property is missing for message id {0}", receivedCloudEvent.RootElement.GetProperty(ID_PROPERTY).GetString());
+            }
         }
     }
 
