@@ -68,9 +68,9 @@ public class CloudEventHttpBinaryEnvelopeHandlerTests
     }
 
     [Test]
-    [TestCase("cloudEvents:type")]
-    [TestCase("cloudEvents:id")]
-    [TestCase("cloudEvents:source")]
+    [TestCase("ce-type")]
+    [TestCase("ce-id")]
+    [TestCase("ce-source")]
     public void Should_not_support_message_with_missing_headers(string property)
     {
         NativeHeaders.Remove(property);
