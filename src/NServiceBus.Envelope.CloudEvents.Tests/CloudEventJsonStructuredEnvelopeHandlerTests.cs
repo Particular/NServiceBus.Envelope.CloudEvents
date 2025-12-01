@@ -5,18 +5,24 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using Extensibility;
+using Fakes;
+using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using NServiceBus;
 using NUnit.Framework;
 using Transport;
 
 [TestFixture]
-public class CloudEventJsonStructuredEnvelopeHandlerTests
+class CloudEventJsonStructuredEnvelopeHandlerTests
 {
-    string NativeMessageId = "";
-    Dictionary<string, string> NativeHeaders = [];
-    Dictionary<string, object> Payload = [];
-    ReadOnlyMemory<byte> Body;
-    CloudEventJsonStructuredEnvelopeHandler envelopeHandler = new();
+    internal required TestMeterFactory meterFactory;
+    internal required string testEndpointName;
+    internal required string NativeMessageId;
+    internal required Dictionary<string, string> NativeHeaders;
+    internal required Dictionary<string, object> Payload;
+    internal required ReadOnlyMemory<byte> Body;
+    internal required CloudEventJsonStructuredEnvelopeHandler envelopeHandler;
+    internal required MetricCollector<long> invalidMessageCounter;
+    internal required MetricCollector<long> unexpectedVersionCounter;
 
     [SetUp]
     public void SetUp()
@@ -30,7 +36,8 @@ public class CloudEventJsonStructuredEnvelopeHandlerTests
             ["some_other_property"] = "some_other_value",
             ["data"] = "{}",
             ["datacontenttype"] = "application/json",
-            ["time"] = "2023-10-10T10:00:00Z"
+            ["time"] = "2023-10-10T10:00:00Z",
+            ["specversion"] = "1.0"
         };
 
         NativeHeaders = new Dictionary<string, string>
@@ -38,7 +45,16 @@ public class CloudEventJsonStructuredEnvelopeHandlerTests
             [Headers.ContentType] = "application/cloudevents+json",
         };
         Body = new ReadOnlyMemory<byte>();
-        envelopeHandler = new CloudEventJsonStructuredEnvelopeHandler();
+        testEndpointName = "testEndpointName";
+        meterFactory = new();
+
+        invalidMessageCounter = new MetricCollector<long>(meterFactory, "NServiceBus.Envelope.CloudEvents",
+            "nservicebus.envelope.cloud_events.received.invalid_message");
+
+        unexpectedVersionCounter = new MetricCollector<long>(meterFactory, "NServiceBus.Envelope.CloudEvents",
+            "nservicebus.envelope.cloud_events.received.unexpected_version");
+
+        envelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(meterFactory, testEndpointName));
     }
 
     [Test]
@@ -92,6 +108,82 @@ public class CloudEventJsonStructuredEnvelopeHandlerTests
     }
 
     [Test]
+    public void Should_report_metric_when_unmarshaling_regular_message()
+    {
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        var invalidMessageCounterSnapshot = invalidMessageCounter.GetMeasurementSnapshot();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(1));
+            Assert.That(invalidMessageCounterSnapshot[0].Value, Is.EqualTo(0));
+            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(testEndpointName));
+            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
+                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED));
+        });
+    }
+
+    [Test]
+    public void Should_report_metric_when_unmarshaling_message_with_version()
+    {
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        var unexpectedVersionCounterSnapshot = unexpectedVersionCounter.GetMeasurementSnapshot();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(unexpectedVersionCounterSnapshot.Count, Is.EqualTo(1));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Value, Is.EqualTo(0));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(testEndpointName));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
+                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.version"],
+                Is.EqualTo("1.0"));
+        });
+    }
+
+    [Test]
+    public void Should_report_metric_when_unmarshaling_message_without_version()
+    {
+        Payload.Remove("specversion");
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        var unexpectedVersionCounterSnapshot = unexpectedVersionCounter.GetMeasurementSnapshot();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(unexpectedVersionCounterSnapshot.Count, Is.EqualTo(1));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Value, Is.EqualTo(1));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(testEndpointName));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
+                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.version"],
+                Is.EqualTo(null));
+        });
+    }
+
+    [Test]
+    public void Should_report_metric_when_unmarshaling_message_with_unrecognized_version()
+    {
+        Payload["specversion"] = "wrong";
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        var unexpectedVersionCounterSnapshot = unexpectedVersionCounter.GetMeasurementSnapshot();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(unexpectedVersionCounterSnapshot.Count, Is.EqualTo(1));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Value, Is.EqualTo(1));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(testEndpointName));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
+                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED));
+            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.version"],
+                Is.EqualTo("wrong"));
+        });
+    }
+
+    [Test]
     public void Should_support_message_with_correct_content_type()
     {
         var actual = envelopeHandler.CanUnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), Body);
@@ -126,6 +218,33 @@ public class CloudEventJsonStructuredEnvelopeHandlerTests
             Payload.Remove("data_base64");
             RunEnvelopHandlerTest();
         });
+
+    [Test]
+    [TestCase("type")]
+    [TestCase("id")]
+    [TestCase("source")]
+    [TestCase("datacontenttype")]
+    [TestCase("data")]
+    public void Should_record_metric_when_property_is_missing(string property)
+    {
+        try
+        {
+            Payload.Remove(property);
+            RunEnvelopHandlerTest();
+        }
+        catch { }
+
+        var invalidMessageCounterSnapshot = invalidMessageCounter.GetMeasurementSnapshot();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(1));
+            Assert.That(invalidMessageCounterSnapshot[0].Value, Is.EqualTo(1));
+            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(testEndpointName));
+            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
+                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED));
+        });
+    }
 
     [Test]
     public void Should_not_throw_when_data_property_is_present() =>

@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Particular.Approvals" Version="2.0.1" />
+    <ProjectReference Include="..\NServiceBus.Envelope.CloudEvents\NServiceBus.Envelope.CloudEvents.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,7 +18,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NServiceBus.Envelope.CloudEvents\NServiceBus.Envelope.CloudEvents.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Particular.Approvals" Version="2.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Fakes\" />
   </ItemGroup>
 
 </Project>

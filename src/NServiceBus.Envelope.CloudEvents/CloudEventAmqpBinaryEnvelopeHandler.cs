@@ -6,7 +6,7 @@ using System.Linq;
 using Extensibility;
 using Logging;
 
-class CloudEventAmqpBinaryEnvelopeHandler : IEnvelopeHandler
+class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelopeHandler
 {
     static readonly ILog Log = LogManager.GetLogger<CloudEventAmqpBinaryEnvelopeHandler>();
 
@@ -15,7 +15,7 @@ class CloudEventAmqpBinaryEnvelopeHandler : IEnvelopeHandler
     const string ID_PROPERTY = HEADER_PREFIX + "id";
     const string SOURCE_PROPERTY = HEADER_PREFIX + "source";
     const string TIME_PROPERTY = HEADER_PREFIX + "time";
-    const string VERSION_PROPERTY = "specversion";
+    const string VERSION_PROPERTY = HEADER_PREFIX + "specversion";
     const string SUPPORTED_VERSION = "1.0";
 
     static readonly string[] REQUIRED_HEADERS = [ID_PROPERTY, SOURCE_PROPERTY, TYPE_PROPERTY];
@@ -49,27 +49,38 @@ class CloudEventAmqpBinaryEnvelopeHandler : IEnvelopeHandler
 
     static string ExtractHeader(IDictionary<string, string> existingHeaders, string property) => existingHeaders[property];
 
-    static void ThrowIfInvalidMessage(IDictionary<string, string> headers)
+    void ThrowIfInvalidMessage(IDictionary<string, string> headers)
     {
         if (!HasRequiredHeaders(headers))
         {
+            metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
             throw new NotSupportedException(
                 $"Missing headers: {string.Join(",", REQUIRED_HEADERS.Where(h => !headers.ContainsKey(h)))}");
         }
+
+        metrics.RecordValidMessage(true, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
 
         if (headers.TryGetValue(VERSION_PROPERTY, out var version))
         {
             if (version != SUPPORTED_VERSION)
             {
+                metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, version);
+
                 if (Log.IsWarnEnabled)
                 {
                     Log.WarnFormat("Unexpected CloudEvent version property value {0} for message {1}",
                         version, headers[ID_PROPERTY]);
                 }
             }
+            else
+            {
+                metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, SUPPORTED_VERSION);
+            }
         }
         else
         {
+            metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, null);
+
             if (Log.IsWarnEnabled)
             {
                 Log.WarnFormat("CloudEvent version property is missing for message id {0}", headers[ID_PROPERTY]);
