@@ -37,9 +37,9 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
 
     static ReadOnlyMemory<byte> ExtractBody(JsonDocument receivedCloudEvent)
     {
-        if (receivedCloudEvent.RootElement.TryGetProperty(DATA_BASE64_PROPERTY, out _))
+        if (receivedCloudEvent.RootElement.TryGetProperty(DATA_BASE64_PROPERTY, out var base64Body))
         {
-            return ExtractBodyFromBase64(receivedCloudEvent);
+            return ExtractBodyFromBase64(base64Body);
         }
 
         return ExtractBodyFromProperty(receivedCloudEvent);
@@ -55,7 +55,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
         return new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(receivedCloudEvent.RootElement.GetProperty(DATA_PROPERTY).GetString()!));
     }
 
-    static ReadOnlyMemory<byte> ExtractBodyFromBase64(JsonDocument receivedCloudEvent) => new(Convert.FromBase64String(receivedCloudEvent.RootElement.GetProperty(DATA_BASE64_PROPERTY).GetString()!));
+    static ReadOnlyMemory<byte> ExtractBodyFromBase64(JsonElement base64Body) => new(Convert.FromBase64String(base64Body.GetString()!));
 
     static Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders, JsonDocument receivedCloudEvent)
     {
