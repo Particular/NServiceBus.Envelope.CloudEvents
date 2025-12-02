@@ -9,14 +9,14 @@ class CloudEventsFeature : Feature
 {
     protected override void Setup(FeatureConfigurationContext context)
     {
-        context.Services.AddSingleton<CloudEventsMetrics>(sp =>
+        _ = context.Services.AddSingleton<CloudEventsMetrics>(sp =>
         {
             var endpointName = context.Settings.EndpointName();
             return new CloudEventsMetrics(sp.GetRequiredService<IMeterFactory>(), endpointName);
         });
-        context.Services.AddSingleton<IEnvelopeHandler, CloudEventJsonStructuredEnvelopeHandler>();
-        context.Services.AddSingleton<IEnvelopeHandler, CloudEventAmqpBinaryEnvelopeHandler>();
-        context.Services.AddSingleton<IEnvelopeHandler, CloudEventHttpBinaryEnvelopeHandler>();
+        _ = context.Services.AddSingleton<IEnvelopeHandler, CloudEventJsonStructuredEnvelopeHandler>();
+        _ = context.Services.AddSingleton<IEnvelopeHandler, CloudEventAmqpBinaryEnvelopeHandler>();
+        _ = context.Services.AddSingleton<IEnvelopeHandler, CloudEventHttpBinaryEnvelopeHandler>();
 
         context.Settings.AddStartupDiagnosticsSection("NServiceBus.Envelope.CloudEvents",
             new
