@@ -21,7 +21,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
     const string SUPPORTED_VERSION = "1.0";
     const string SUPPORTED_CONTENT_TYPE = "application/cloudevents+json";
 
-    static readonly string[] HEADERS_TO_IGNORE = [DATA_PROPERTY, DATA_BASE64_PROPERTY];
+    static readonly HashSet<string> HEADERS_TO_IGNORE = [DATA_PROPERTY, DATA_BASE64_PROPERTY];
     static readonly string[] REQUIRED_PROPERTIES = [ID_PROPERTY, SOURCE_PROPERTY, TYPE_PROPERTY, DATA_CONTENT_TYPE_PROPERTY];
 
     static readonly JsonSerializerOptions options = new() { PropertyNameCaseInsensitive = true };
