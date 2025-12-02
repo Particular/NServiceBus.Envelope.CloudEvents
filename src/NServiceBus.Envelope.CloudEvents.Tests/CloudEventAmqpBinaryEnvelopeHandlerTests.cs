@@ -18,6 +18,8 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     internal required string TestEndpointName;
     internal required string NativeMessageId;
     internal required Dictionary<string, string> NativeHeaders;
+    internal required CloudEventAmqpBinaryEnvelopeHandler envelopeHandler;
+    internal required CloudEventsConfiguration cloudEventsConfiguration;
     internal required CloudEventAmqpBinaryEnvelopeHandler EnvelopeHandler;
     internal required MetricCollector<long> InvalidMessageCounter;
     internal required MetricCollector<long> UnexpectedVersionCounter;
@@ -27,6 +29,13 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     public void SetUp()
     {
         NativeMessageId = Guid.NewGuid().ToString();
+        cloudEventsConfiguration = new CloudEventsConfiguration
+        {
+            TypeMappings = new Dictionary<string, string>
+            {
+                { "com.example.someevent", "myproject.someevent" }
+            }
+        };
         NativeHeaders = new Dictionary<string, string>
         {
             ["cloudEvents:type"] = "com.example.someevent",
@@ -49,7 +58,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
         UnexpectedVersionCounter = new MetricCollector<long>(MeterFactory, "NServiceBus.Envelope.CloudEvents",
             "nservicebus.envelope.cloud_events.received.unexpected_version");
 
-        EnvelopeHandler = new CloudEventAmqpBinaryEnvelopeHandler(new(MeterFactory, TestEndpointName));
+        EnvelopeHandler = new CloudEventAmqpBinaryEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration);
     }
 
     [Test]
@@ -217,6 +226,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
             Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo(NativeHeaders["cloudEvents:time"]));
             Assert.That(actual.Headers.ContainsKey("data"), Is.False);
             Assert.That(actual.Headers.ContainsKey("some_other_property"), Is.False);
+            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("myproject.someevent"));
         });
     }
 }

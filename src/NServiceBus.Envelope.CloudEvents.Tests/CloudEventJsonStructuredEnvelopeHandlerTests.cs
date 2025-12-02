@@ -23,6 +23,7 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
     internal required CloudEventJsonStructuredEnvelopeHandler EnvelopeHandler;
     internal required MetricCollector<long> InvalidMessageCounter;
     internal required MetricCollector<long> UnexpectedVersionCounter;
+    internal required CloudEventsConfiguration cloudEventsConfiguration;
 
     [SetUp]
     public void SetUp()
@@ -39,6 +40,13 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
             ["time"] = "2023-10-10T10:00:00Z",
             ["specversion"] = "1.0"
         };
+        cloudEventsConfiguration = new CloudEventsConfiguration
+        {
+            TypeMappings = new Dictionary<string, string>
+            {
+                { "com.example.someevent", "myproject.someevent" }
+            }
+        };
 
         NativeHeaders = new Dictionary<string, string>
         {
@@ -54,7 +62,7 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
         UnexpectedVersionCounter = new MetricCollector<long>(MeterFactory, "NServiceBus.Envelope.CloudEvents",
             "nservicebus.envelope.cloud_events.received.unexpected_version");
 
-        EnvelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(MeterFactory, TestEndpointName));
+        EnvelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration);
     }
 
     [Test]
@@ -327,6 +335,7 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
             Assert.That(actual.Headers[Headers.MessageId], Is.EqualTo(Payload["id"]));
             Assert.That(actual.Headers[Headers.ReplyToAddress], Is.EqualTo(Payload["source"]));
             Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo(Payload["time"]));
+            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("myproject.someevent"));
             Assert.That(actual.Headers["id"], Is.EqualTo(Payload["id"]));
             Assert.That(actual.Headers["type"], Is.EqualTo(Payload["type"]));
             Assert.That(actual.Headers["source"], Is.EqualTo(Payload["source"]));

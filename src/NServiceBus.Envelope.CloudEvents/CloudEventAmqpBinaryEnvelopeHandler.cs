@@ -19,7 +19,7 @@ class CloudEventAmqpBinaryConstants
     internal static readonly string[] RequiredHeaders = [IdProperty, SourceProperty, TypeProperty];
 }
 
-class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelopeHandler
+class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEventsConfiguration config) : IEnvelopeHandler
 {
     static readonly ILog Log = LogManager.GetLogger<CloudEventAmqpBinaryEnvelopeHandler>();
 
@@ -40,12 +40,13 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelop
                 StringComparer.OrdinalIgnoreCase);
     }
 
-    static Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders)
+    Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders)
     {
         var headersCopy = existingHeaders.ToDictionary(k => k.Key, k => k.Value);
 
         headersCopy[Headers.MessageId] = ExtractId(existingHeaders);
         headersCopy[Headers.ReplyToAddress] = ExtractSource(existingHeaders);
+        headersCopy[Headers.EnclosedMessageTypes] = ExtractType(existingHeaders);
         if (existingHeaders.TryGetValue(CloudEventAmqpBinaryConstants.TimeProperty, out var time))
         {
             headersCopy[Headers.TimeSent] = time;
@@ -55,6 +56,12 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelop
     }
 
     static string ExtractId(IDictionary<string, string> existingHeaders) => ExtractHeader(existingHeaders, CloudEventAmqpBinaryConstants.IdProperty);
+
+    string ExtractType(IDictionary<string, string> existingHeaders)
+    {
+        var cloudEventType = ExtractHeader(existingHeaders, CloudEventAmqpBinaryConstants.TypeProperty);
+        return config.TypeMappings?.GetValueOrDefault(cloudEventType) ?? cloudEventType;
+    }
 
     static string ExtractSource(IDictionary<string, string> existingHeaders) => ExtractHeader(existingHeaders, CloudEventAmqpBinaryConstants.SourceProperty);
 
