@@ -9,7 +9,8 @@ class CloudEventsFeature : Feature
 {
     protected override void Setup(FeatureConfigurationContext context)
     {
-        _ = context.Services.AddSingleton<CloudEventsMetrics>(sp =>
+        _ = context.Services.AddSingleton(context.Settings.Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsSetting));
+        _ = context.Services.AddSingleton(sp =>
         {
             var endpointName = context.Settings.EndpointName();
             return new CloudEventsMetrics(sp.GetRequiredService<IMeterFactory>(), endpointName);
