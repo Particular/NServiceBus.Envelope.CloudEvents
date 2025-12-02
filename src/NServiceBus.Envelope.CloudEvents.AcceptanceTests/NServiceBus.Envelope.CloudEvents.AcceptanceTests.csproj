@@ -3,9 +3,6 @@
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <!-- Suppress warnings in test project -->
-        <NoWarn>$(NoWarn);CS8618;CS8622;CS8625;CS8767;CS8601;CS8602;CS8603;CS8604;CS8619;PS0018</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
