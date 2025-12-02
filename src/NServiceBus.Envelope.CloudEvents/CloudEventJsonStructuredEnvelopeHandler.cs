@@ -61,12 +61,13 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
     {
         var headersCopy = existingHeaders.ToDictionary(k => k.Key, k => k.Value);
 
-        foreach (var kvp in receivedCloudEvent
-                     .RootElement
-                     .EnumerateObject()
-                     .Where(p => !HEADERS_TO_IGNORE.Contains(p.Name))
-                     .Where(p => p.Value.ValueKind != JsonValueKind.Null))
+        foreach (var kvp in receivedCloudEvent.RootElement.EnumerateObject())
         {
+            if (HEADERS_TO_IGNORE.Contains(kvp.Name) || kvp.Value.ValueKind == JsonValueKind.Null)
+            {
+                continue;
+            }
+
             headersCopy[kvp.Name] = kvp.Value.ValueKind == JsonValueKind.String
                 ? kvp.Value.GetString()!
                 : kvp.Value.GetRawText();
