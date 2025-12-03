@@ -5,39 +5,43 @@ using System.Text.Json;
 using Extensibility;
 using Logging;
 
+static class CloudEventJsonStructuredConstants
+{
+    internal const string TypeProperty = "type";
+    internal const string DataContentTypeProperty = "datacontenttype";
+    internal const string DataProperty = "data";
+    internal const string DataBase64Property = "data_base64";
+    internal const string IdProperty = "id";
+    internal const string SourceProperty = "source";
+    internal const string TimeProperty = "time";
+    internal const string VersionProperty = "specversion";
+    internal const string JsonSuffix = "json";
+    internal const string SupportedVersion = "1.0";
+    internal const string SupportedContentType = "application/cloudevents+json";
+    internal const string JsonContentType = "application/json";
+
+    internal static readonly HashSet<string> HeadersToIgnore = [DataProperty, DataBase64Property];
+    internal static readonly string[] RequiredProperties = [IdProperty, SourceProperty, TypeProperty];
+}
+
 class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelopeHandler
 {
     static readonly ILog Log = LogManager.GetLogger<CloudEventJsonStructuredEnvelopeHandler>();
 
-    const string TYPE_PROPERTY = "type";
-    const string DATA_CONTENT_TYPE_PROPERTY = "datacontenttype";
-    const string DATA_PROPERTY = "data";
-    const string DATA_BASE64_PROPERTY = "data_base64";
-    const string ID_PROPERTY = "id";
-    const string SOURCE_PROPERTY = "source";
-    const string TIME_PROPERTY = "time";
-    const string VERSION_PROPERTY = "specversion";
-    const string JSON_SUFFIX = "json";
-    const string SUPPORTED_VERSION = "1.0";
-    const string SUPPORTED_CONTENT_TYPE = "application/cloudevents+json";
-
-    static readonly HashSet<string> HEADERS_TO_IGNORE = [DATA_PROPERTY, DATA_BASE64_PROPERTY];
-    static readonly string[] REQUIRED_PROPERTIES = [ID_PROPERTY, SOURCE_PROPERTY, TYPE_PROPERTY, DATA_CONTENT_TYPE_PROPERTY];
-
-    static readonly JsonSerializerOptions options = new() { PropertyNameCaseInsensitive = true };
+    static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
 
     public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body) UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders, ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
     {
         ThrowIfInvalidMessage(incomingHeaders);
-        JsonDocument receivedCloudEvent = DeserializeOrThrow(incomingBody);
+        Dictionary<string, JsonProperty> receivedCloudEvent = DeserializeOrThrow(incomingBody);
         var headers = ExtractHeaders(incomingHeaders, receivedCloudEvent);
         var body = ExtractBody(receivedCloudEvent);
         return (headers, body);
     }
 
-    static ReadOnlyMemory<byte> ExtractBody(JsonDocument receivedCloudEvent)
+    static ReadOnlyMemory<byte> ExtractBody(Dictionary<string, JsonProperty> receivedCloudEvent)
     {
-        if (receivedCloudEvent.RootElement.TryGetProperty(DATA_BASE64_PROPERTY, out var base64Body))
+        if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.DataBase64Property, out var base64Body))
         {
             return ExtractBodyFromBase64(base64Body);
         }
@@ -45,93 +49,97 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
         return ExtractBodyFromProperty(receivedCloudEvent);
     }
 
-    static ReadOnlyMemory<byte> ExtractBodyFromProperty(JsonDocument receivedCloudEvent)
+    static ReadOnlyMemory<byte> ExtractBodyFromProperty(Dictionary<string, JsonProperty> receivedCloudEvent)
     {
-        if (receivedCloudEvent.RootElement.TryGetProperty(DATA_CONTENT_TYPE_PROPERTY, out var property) && property.GetString()!.EndsWith(JSON_SUFFIX))
+        if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.DataContentTypeProperty, out var property) && !property.Value.GetString()!.EndsWith(CloudEventJsonStructuredConstants.JsonSuffix))
         {
-            return new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(receivedCloudEvent.RootElement.GetProperty(DATA_PROPERTY).GetRawText()));
+            return new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(receivedCloudEvent[CloudEventJsonStructuredConstants.DataProperty].Value.GetString()!));
         }
 
-        return new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(receivedCloudEvent.RootElement.GetProperty(DATA_PROPERTY).GetString()!));
+        return new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(receivedCloudEvent[CloudEventJsonStructuredConstants.DataProperty].Value.GetRawText()));
     }
 
-    static ReadOnlyMemory<byte> ExtractBodyFromBase64(JsonElement base64Body) => new(Convert.FromBase64String(base64Body.GetString()!));
+    static ReadOnlyMemory<byte> ExtractBodyFromBase64(JsonProperty base64Body) => new(Convert.FromBase64String(base64Body.Value.GetString()!));
 
-    static Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders, JsonDocument receivedCloudEvent)
+    static Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders, Dictionary<string, JsonProperty> receivedCloudEvent)
     {
         var headersCopy = existingHeaders.ToDictionary(k => k.Key, k => k.Value);
 
-        foreach (var kvp in receivedCloudEvent.RootElement.EnumerateObject())
+        foreach (var kvp in receivedCloudEvent)
         {
-            if (HEADERS_TO_IGNORE.Contains(kvp.Name) || kvp.Value.ValueKind == JsonValueKind.Null)
+            if (CloudEventJsonStructuredConstants.HeadersToIgnore.Contains(kvp.Key) || kvp.Value.Value.ValueKind == JsonValueKind.Null)
             {
                 continue;
             }
 
-            headersCopy[kvp.Name] = kvp.Value.ValueKind == JsonValueKind.String
-                ? kvp.Value.GetString()!
-                : kvp.Value.GetRawText();
+            headersCopy[kvp.Key] = kvp.Value.Value.ValueKind == JsonValueKind.String
+                ? kvp.Value.Value.GetString()!
+                : kvp.Value.Value.GetRawText();
         }
 
         headersCopy[Headers.MessageId] = ExtractId(receivedCloudEvent);
         headersCopy[Headers.ReplyToAddress] = ExtractSource(receivedCloudEvent);
-        if (receivedCloudEvent.RootElement.TryGetProperty(TIME_PROPERTY, out var time))
+        if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.TimeProperty, out var time))
         {
-            headersCopy[Headers.TimeSent] = time.GetString()!;
+            headersCopy[Headers.TimeSent] = time.Value.GetString()!;
+        }
+
+        if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.DataContentTypeProperty, out var dataContentType))
+        {
+            headersCopy[Headers.ContentType] = dataContentType.Value.GetString()!;
+        }
+        else
+        {
+            headersCopy[Headers.ContentType] = CloudEventJsonStructuredConstants.JsonContentType;
         }
 
         return headersCopy;
     }
 
-    static string ExtractId(JsonDocument receivedCloudEvent) => ExtractHeader(receivedCloudEvent, ID_PROPERTY);
+    static string ExtractId(Dictionary<string, JsonProperty> receivedCloudEvent) => ExtractHeader(receivedCloudEvent, CloudEventJsonStructuredConstants.IdProperty);
 
-    static string ExtractSource(JsonDocument receivedCloudEvent) => ExtractHeader(receivedCloudEvent, SOURCE_PROPERTY);
+    static string ExtractSource(Dictionary<string, JsonProperty> receivedCloudEvent) => ExtractHeader(receivedCloudEvent, CloudEventJsonStructuredConstants.SourceProperty);
 
-    static string ExtractHeader(JsonDocument receivedCloudEvent, string property) => receivedCloudEvent.RootElement.GetProperty(property).GetString()!;
+    static string ExtractHeader(Dictionary<string, JsonProperty> receivedCloudEvent, string property) => receivedCloudEvent[property].Value.GetString()!;
 
-    void ThrowIfInvalidCloudEvent(JsonDocument? receivedCloudEvent)
+    void ThrowIfInvalidCloudEvent(Dictionary<string, JsonProperty> receivedCloudEvent)
     {
-        if (receivedCloudEvent == null)
-        {
-            metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED);
-            throw new NotSupportedException("Couldn't deserialize the message into a cloud event");
-        }
 
-        foreach (var property in REQUIRED_PROPERTIES)
+        foreach (var property in CloudEventJsonStructuredConstants.RequiredProperties)
         {
-            if (!receivedCloudEvent.RootElement.TryGetProperty(property, out _))
+            if (!receivedCloudEvent.TryGetValue(property, out _))
             {
                 metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED);
                 throw new NotSupportedException($"Message lacks {property} property");
             }
         }
 
-        if (!receivedCloudEvent.RootElement.TryGetProperty(DATA_BASE64_PROPERTY, out _) &&
-            !receivedCloudEvent.RootElement.TryGetProperty(DATA_PROPERTY, out _))
+        if (!receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.DataBase64Property, out _) &&
+            !receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.DataProperty, out _))
         {
             metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED);
-            throw new NotSupportedException($"Message lacks both {DATA_PROPERTY} and {DATA_BASE64_PROPERTY} property");
+            throw new NotSupportedException($"Message lacks both {CloudEventJsonStructuredConstants.DataProperty} and {CloudEventJsonStructuredConstants.DataBase64Property} property");
         }
 
         metrics.RecordValidMessage(true, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED);
 
-        if (receivedCloudEvent.RootElement.TryGetProperty(VERSION_PROPERTY, out var version))
+        if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.VersionProperty, out var version))
         {
-            var versionValue = version.GetString();
+            var versionValue = version.Value.GetString();
 
-            if (versionValue != SUPPORTED_VERSION)
+            if (versionValue != CloudEventJsonStructuredConstants.SupportedVersion)
             {
                 metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED, versionValue);
 
                 if (Log.IsWarnEnabled)
                 {
                     Log.WarnFormat("Unexpected CloudEvent version property value {0} for message {1}",
-                        versionValue, receivedCloudEvent.RootElement.GetProperty(ID_PROPERTY).GetString());
+                        versionValue, receivedCloudEvent[CloudEventJsonStructuredConstants.IdProperty].Value.GetString());
                 }
             }
             else
             {
-                metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED, SUPPORTED_VERSION);
+                metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED, CloudEventJsonStructuredConstants.SupportedVersion);
             }
         }
         else
@@ -140,23 +148,38 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
 
             if (Log.IsWarnEnabled)
             {
-                Log.WarnFormat("CloudEvent version property is missing for message id {0}", receivedCloudEvent.RootElement.GetProperty(ID_PROPERTY).GetString());
+                Log.WarnFormat("CloudEvent version property is missing for message id {0}", receivedCloudEvent[CloudEventJsonStructuredConstants.IdProperty].Value.GetString());
             }
         }
     }
 
-    JsonDocument DeserializeOrThrow(ReadOnlyMemory<byte> body)
+    Dictionary<string, JsonProperty> DeserializeOrThrow(ReadOnlyMemory<byte> body)
     {
-        var receivedCloudEvent = JsonSerializer.Deserialize<JsonDocument>(body.Span, options);
-        ThrowIfInvalidCloudEvent(receivedCloudEvent);
-        return receivedCloudEvent!;
+        var receivedCloudEvent = JsonSerializer.Deserialize<JsonDocument>(body.Span, Options);
+
+        if (receivedCloudEvent == null)
+        {
+            metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED);
+            throw new NotSupportedException("Couldn't deserialize the message into a cloud event");
+        }
+
+        Dictionary<string, JsonProperty> caseInsensitiveProperties = ToCaseInsensitiveDictionary(receivedCloudEvent);
+        ThrowIfInvalidCloudEvent(caseInsensitiveProperties);
+        return caseInsensitiveProperties;
+    }
+
+    static Dictionary<string, JsonProperty> ToCaseInsensitiveDictionary(JsonDocument receivedCloudEvent)
+    {
+        return receivedCloudEvent.RootElement.EnumerateObject()
+            .ToDictionary(p => p.Name.ToLowerInvariant(), p => p,
+                StringComparer.OrdinalIgnoreCase);
     }
 
     static void ThrowIfInvalidMessage(IDictionary<string, string> headers)
     {
         if (headers.TryGetValue(Headers.ContentType, out var value))
         {
-            if (value != SUPPORTED_CONTENT_TYPE)
+            if (value != CloudEventJsonStructuredConstants.SupportedContentType && !value.Contains(CloudEventJsonStructuredConstants.SupportedContentType))
             {
                 throw new NotSupportedException($"Unsupported content type {value}");
             }
@@ -167,6 +190,12 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
         }
     }
 
-    public bool CanUnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders, ContextBag extensions, ReadOnlyMemory<byte> incomingBody) =>
-        incomingHeaders.TryGetValue(Headers.ContentType, out var value) && value == SUPPORTED_CONTENT_TYPE;
+    public bool CanUnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders,
+        ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
+    {
+        var can = incomingHeaders.TryGetValue(Headers.ContentType, out var value) &&
+            (value == CloudEventJsonStructuredConstants.SupportedContentType || value.Contains(CloudEventJsonStructuredConstants.SupportedContentType));
+
+        return can;
+    }
 }

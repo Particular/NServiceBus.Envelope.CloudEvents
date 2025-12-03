@@ -6,27 +6,38 @@ using System.Linq;
 using Extensibility;
 using Logging;
 
+class CloudEventHttpBinaryEnvelopeHandlerConstants
+{
+    internal const string HeaderPrefix = "ce-";
+    internal const string TypeProperty = HeaderPrefix + "type";
+    internal const string IdProperty = HeaderPrefix + "id";
+    internal const string SourceProperty = HeaderPrefix + "source";
+    internal const string TimeProperty = HeaderPrefix + "time";
+    internal const string VersionProperty = HeaderPrefix + "specversion";
+    internal const string SupportedVersion = "1.0";
+
+    internal static readonly string[] RequiredHeaders = [IdProperty, SourceProperty, TypeProperty];
+}
+
 class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelopeHandler
 {
     static readonly ILog Log = LogManager.GetLogger<CloudEventHttpBinaryEnvelopeHandler>();
-
-    const string HEADER_PREFIX = "ce-";
-    const string TYPE_PROPERTY = HEADER_PREFIX + "type";
-    const string ID_PROPERTY = HEADER_PREFIX + "id";
-    const string SOURCE_PROPERTY = HEADER_PREFIX + "source";
-    const string TIME_PROPERTY = HEADER_PREFIX + "time";
-    const string VERSION_PROPERTY = HEADER_PREFIX + "specversion";
-    const string SUPPORTED_VERSION = "1.0";
-
-    static readonly string[] REQUIRED_HEADERS = [ID_PROPERTY, SOURCE_PROPERTY, TYPE_PROPERTY];
 
     public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body) UnwrapEnvelope(
         string nativeMessageId, IDictionary<string, string> incomingHeaders,
         ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
     {
-        ThrowIfInvalidMessage(incomingHeaders);
-        var headers = ExtractHeaders(incomingHeaders);
+        var caseInsensitiveHeaders = ToCaseInsensitiveDictionary(incomingHeaders);
+        ThrowIfInvalidMessage(caseInsensitiveHeaders);
+        var headers = ExtractHeaders(caseInsensitiveHeaders);
         return (headers, incomingBody);
+    }
+
+    static Dictionary<string, string> ToCaseInsensitiveDictionary(IDictionary<string, string> incomingHeaders)
+    {
+        return incomingHeaders
+            .ToDictionary(p => p.Key.ToLowerInvariant(), p => p.Value,
+                StringComparer.OrdinalIgnoreCase);
     }
 
     static Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders)
@@ -35,7 +46,7 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelop
 
         headersCopy[Headers.MessageId] = ExtractId(existingHeaders);
         headersCopy[Headers.ReplyToAddress] = ExtractSource(existingHeaders);
-        if (existingHeaders.TryGetValue(TIME_PROPERTY, out var time))
+        if (existingHeaders.TryGetValue(CloudEventHttpBinaryEnvelopeHandlerConstants.TimeProperty, out var time))
         {
             headersCopy[Headers.TimeSent] = time;
         }
@@ -44,10 +55,10 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelop
     }
 
     static string ExtractId(IDictionary<string, string> existingHeaders) =>
-        ExtractHeader(existingHeaders, ID_PROPERTY);
+        ExtractHeader(existingHeaders, CloudEventHttpBinaryEnvelopeHandlerConstants.IdProperty);
 
     static string ExtractSource(IDictionary<string, string> existingHeaders) =>
-        ExtractHeader(existingHeaders, SOURCE_PROPERTY);
+        ExtractHeader(existingHeaders, CloudEventHttpBinaryEnvelopeHandlerConstants.SourceProperty);
 
     static string ExtractHeader(IDictionary<string, string> existingHeaders, string property) =>
         existingHeaders[property];
@@ -58,26 +69,26 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelop
         {
             metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.HTTP_BINARY);
             throw new NotSupportedException(
-                $"Missing headers: {string.Join(",", REQUIRED_HEADERS.Where(h => !headers.ContainsKey(h)))}");
+                $"Missing headers: {string.Join(",", CloudEventHttpBinaryEnvelopeHandlerConstants.RequiredHeaders.Where(h => !headers.ContainsKey(h)))}");
         }
 
         metrics.RecordValidMessage(true, CloudEventsMetrics.CloudEventTypes.HTTP_BINARY);
 
-        if (headers.TryGetValue(VERSION_PROPERTY, out var version))
+        if (headers.TryGetValue(CloudEventHttpBinaryEnvelopeHandlerConstants.VersionProperty, out var version))
         {
-            if (version != SUPPORTED_VERSION)
+            if (version != CloudEventHttpBinaryEnvelopeHandlerConstants.SupportedVersion)
             {
                 metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.HTTP_BINARY, version);
 
                 if (Log.IsWarnEnabled)
                 {
                     Log.WarnFormat("Unexpected CloudEvent version property value {0} for message {1}",
-                        version, headers[ID_PROPERTY]);
+                        version, headers[CloudEventHttpBinaryEnvelopeHandlerConstants.IdProperty]);
                 }
             }
             else
             {
-                metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.HTTP_BINARY, SUPPORTED_VERSION);
+                metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.HTTP_BINARY, CloudEventHttpBinaryEnvelopeHandlerConstants.SupportedVersion);
             }
         }
         else
@@ -86,15 +97,14 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelop
 
             if (Log.IsWarnEnabled)
             {
-                Log.WarnFormat("CloudEvent version property is missing for message id {0}", headers[ID_PROPERTY]);
+                Log.WarnFormat("CloudEvent version property is missing for message id {0}", headers[CloudEventHttpBinaryEnvelopeHandlerConstants.IdProperty]);
             }
         }
     }
 
-    static bool HasRequiredHeaders(IDictionary<string, string> incomingHeaders) =>
-        REQUIRED_HEADERS.All(incomingHeaders.ContainsKey);
+    static bool HasRequiredHeaders(IDictionary<string, string> incomingHeaders) => CloudEventHttpBinaryEnvelopeHandlerConstants.RequiredHeaders.All(incomingHeaders.ContainsKey);
 
     public bool CanUnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders,
         ContextBag extensions, ReadOnlyMemory<byte> incomingBody) =>
-        REQUIRED_HEADERS.All(incomingHeaders.ContainsKey);
+        CloudEventHttpBinaryEnvelopeHandlerConstants.RequiredHeaders.All(incomingHeaders.ContainsKey);
 }
