@@ -102,7 +102,9 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
     string ExtractType(Dictionary<string, JsonProperty> receivedCloudEvent)
     {
         var cloudEventType = ExtractHeader(receivedCloudEvent, CloudEventJsonStructuredConstants.TypeProperty);
-        return config.TypeMappings?.GetValueOrDefault(cloudEventType) ?? cloudEventType;
+        return config.TypeMappings.TryGetValue(cloudEventType, out var typeMapping)
+            ? string.Join(',', typeMapping)
+            : cloudEventType;
     }
     static string ExtractSource(Dictionary<string, JsonProperty> receivedCloudEvent) => ExtractHeader(receivedCloudEvent, CloudEventJsonStructuredConstants.SourceProperty);
 

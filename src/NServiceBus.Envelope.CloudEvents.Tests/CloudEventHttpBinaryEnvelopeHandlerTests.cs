@@ -24,6 +24,10 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
     internal required MetricCollector<long> UnexpectedVersionCounter;
     internal required CloudEventsConfiguration cloudEventsConfiguration;
 
+    class MyEvent
+    {
+    }
+
     [SetUp]
     public void SetUp()
     {
@@ -38,9 +42,9 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
         };
         cloudEventsConfiguration = new CloudEventsConfiguration
         {
-            TypeMappings = new Dictionary<string, string>
+            TypeMappings = new Dictionary<string, Type[]>
             {
-                { "com.example.someevent", "myproject.someevent" }
+                { "com.example.someevent", [typeof(MyEvent)] }
             }
         };
         Body = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new Dictionary<string, object>
@@ -222,7 +226,7 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
             Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo(NativeHeaders["ce-time"]));
             Assert.That(actual.Headers.ContainsKey("data"), Is.False);
             Assert.That(actual.Headers.ContainsKey("some_other_property"), Is.False);
-            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("myproject.someevent"));
+            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.CloudEventHttpBinaryEnvelopeHandlerTests+MyEvent"));
         });
     }
 }

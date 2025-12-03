@@ -25,15 +25,19 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     internal required MetricCollector<long> UnexpectedVersionCounter;
     internal required ReadOnlyMemory<byte> Body;
 
+    class MyEvent
+    {
+    }
+
     [SetUp]
     public void SetUp()
     {
         NativeMessageId = Guid.NewGuid().ToString();
         cloudEventsConfiguration = new CloudEventsConfiguration
         {
-            TypeMappings = new Dictionary<string, string>
+            TypeMappings = new Dictionary<string, Type[]>
             {
-                { "com.example.someevent", "myproject.someevent" }
+                { "com.example.someevent", [typeof(MyEvent)]}
             }
         };
         NativeHeaders = new Dictionary<string, string>
@@ -226,7 +230,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
             Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo(NativeHeaders["cloudEvents:time"]));
             Assert.That(actual.Headers.ContainsKey("data"), Is.False);
             Assert.That(actual.Headers.ContainsKey("some_other_property"), Is.False);
-            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("myproject.someevent"));
+            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.CloudEventAmqpBinaryEnvelopeHandlerTests+MyEvent"));
         });
     }
 }

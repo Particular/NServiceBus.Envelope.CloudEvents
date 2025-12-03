@@ -58,7 +58,9 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
     string ExtractType(IDictionary<string, string> existingHeaders)
     {
         var cloudEventType = ExtractHeader(existingHeaders, CloudEventHttpBinaryEnvelopeHandlerConstants.TypeProperty);
-        return config.TypeMappings?.GetValueOrDefault(cloudEventType) ?? cloudEventType;
+        return config.TypeMappings.TryGetValue(cloudEventType, out var typeMapping)
+            ? string.Join(',', typeMapping)
+            : cloudEventType;
     }
 
     static string ExtractId(IDictionary<string, string> existingHeaders) =>

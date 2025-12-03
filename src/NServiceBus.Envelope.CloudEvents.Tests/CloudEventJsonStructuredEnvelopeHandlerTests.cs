@@ -25,6 +25,10 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
     internal required MetricCollector<long> UnexpectedVersionCounter;
     internal required CloudEventsConfiguration cloudEventsConfiguration;
 
+    class MyEvent
+    {
+    }
+
     [SetUp]
     public void SetUp()
     {
@@ -42,9 +46,9 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
         };
         cloudEventsConfiguration = new CloudEventsConfiguration
         {
-            TypeMappings = new Dictionary<string, string>
+            TypeMappings = new Dictionary<string, Type[]>
             {
-                { "com.example.someevent", "myproject.someevent" }
+                { "com.example.someevent", [typeof(MyEvent)] },
             }
         };
 
@@ -335,7 +339,7 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
             Assert.That(actual.Headers[Headers.MessageId], Is.EqualTo(Payload["id"]));
             Assert.That(actual.Headers[Headers.ReplyToAddress], Is.EqualTo(Payload["source"]));
             Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo(Payload["time"]));
-            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("myproject.someevent"));
+            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.CloudEventJsonStructuredEnvelopeHandlerTests+MyEvent"));
             Assert.That(actual.Headers["id"], Is.EqualTo(Payload["id"]));
             Assert.That(actual.Headers["type"], Is.EqualTo(Payload["type"]));
             Assert.That(actual.Headers["source"], Is.EqualTo(Payload["source"]));
