@@ -22,6 +22,7 @@ public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
         var transport = PrepareSqsTransport();
         configuration.UseTransport(transport);
         configuration.EnableInstallers();
+        configuration.EnableCloudEvents();
 
         //We set the default test execution timeout only when not explicitly set by the test
         if (settings.TestExecutionTimeout == null || settings.TestExecutionTimeout.Value <= TimeSpan.FromSeconds(120))
