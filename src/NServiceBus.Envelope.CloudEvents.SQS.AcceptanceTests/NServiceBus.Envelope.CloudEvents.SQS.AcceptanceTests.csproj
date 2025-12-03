@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="AWSSDK.S3" Version="4.0.14" />
+      <!-- Required for IAM Roles for Service Accounts even though no API is added -->
+      <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.1" />
+      <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.2.7" />
+      <PackageReference Include="AWSSDK.SQS" Version="4.0.2.5" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <PackageReference Include="GitHubActionsTestLogger" Version="3.0.1" />
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+      <PackageReference Include="NServiceBus.AmazonSQS" Version="9.0.0-alpha.3" />
+      <PackageReference Include="NUnit" Version="4.4.0" />
+      <PackageReference Include="NUnit3TestAdapter" Version="5.2.0" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="10.0.0-cloudevents.1" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <ProjectReference Include="..\NServiceBus.Envelope.CloudEvents\NServiceBus.Envelope.CloudEvents.csproj" />
+    </ItemGroup>
+
+</Project>
