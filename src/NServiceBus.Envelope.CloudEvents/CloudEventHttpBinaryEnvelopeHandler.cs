@@ -19,7 +19,7 @@ class CloudEventHttpBinaryEnvelopeHandlerConstants
     internal static readonly string[] RequiredHeaders = [IdProperty, SourceProperty, TypeProperty];
 }
 
-class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelopeHandler
+class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEventsConfiguration config) : IEnvelopeHandler
 {
     static readonly ILog Log = LogManager.GetLogger<CloudEventHttpBinaryEnvelopeHandler>();
 
@@ -38,12 +38,13 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelop
             .ToDictionary(p => p.Key, p => p.Value,
                 StringComparer.OrdinalIgnoreCase);
 
-    static Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders)
+    Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders)
     {
         var headersCopy = existingHeaders.ToDictionary(k => k.Key, k => k.Value);
 
         headersCopy[Headers.MessageId] = ExtractId(existingHeaders);
         headersCopy[Headers.ReplyToAddress] = ExtractSource(existingHeaders);
+        headersCopy[Headers.EnclosedMessageTypes] = ExtractType(existingHeaders);
         if (existingHeaders.TryGetValue(CloudEventHttpBinaryEnvelopeHandlerConstants.TimeProperty, out var time))
         {
             /*
@@ -54,6 +55,14 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelop
         }
 
         return headersCopy;
+    }
+
+    string ExtractType(IDictionary<string, string> existingHeaders)
+    {
+        var cloudEventType = ExtractHeader(existingHeaders, CloudEventHttpBinaryEnvelopeHandlerConstants.TypeProperty);
+        return config.TypeMappings.TryGetValue(cloudEventType, out var typeMapping)
+            ? string.Join(',', typeMapping)
+            : cloudEventType;
     }
 
     static string ExtractId(IDictionary<string, string> existingHeaders) =>

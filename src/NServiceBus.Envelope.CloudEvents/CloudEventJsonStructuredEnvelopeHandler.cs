@@ -24,7 +24,7 @@ static class CloudEventJsonStructuredConstants
     internal static readonly string[] RequiredProperties = [IdProperty, SourceProperty, TypeProperty];
 }
 
-class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelopeHandler
+class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudEventsConfiguration config) : IEnvelopeHandler
 {
     static readonly ILog Log = LogManager.GetLogger<CloudEventJsonStructuredEnvelopeHandler>();
 
@@ -61,7 +61,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
 
     static ReadOnlyMemory<byte> ExtractBodyFromBase64(JsonProperty base64Body) => new(Convert.FromBase64String(base64Body.Value.GetString()!));
 
-    static Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders, Dictionary<string, JsonProperty> receivedCloudEvent)
+    Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders, Dictionary<string, JsonProperty> receivedCloudEvent)
     {
         var headersCopy = existingHeaders.ToDictionary(k => k.Key, k => k.Value);
 
@@ -79,6 +79,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
 
         headersCopy[Headers.MessageId] = ExtractId(receivedCloudEvent);
         headersCopy[Headers.ReplyToAddress] = ExtractSource(receivedCloudEvent);
+        headersCopy[Headers.EnclosedMessageTypes] = ExtractType(receivedCloudEvent);
         if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.TimeProperty, out var time) && time.Value.ValueKind != JsonValueKind.Null)
         {
             /*
@@ -102,6 +103,13 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
 
     static string ExtractId(Dictionary<string, JsonProperty> receivedCloudEvent) => ExtractHeader(receivedCloudEvent, CloudEventJsonStructuredConstants.IdProperty);
 
+    string ExtractType(Dictionary<string, JsonProperty> receivedCloudEvent)
+    {
+        var cloudEventType = ExtractHeader(receivedCloudEvent, CloudEventJsonStructuredConstants.TypeProperty);
+        return config.TypeMappings.TryGetValue(cloudEventType, out var typeMapping)
+            ? string.Join(',', typeMapping)
+            : cloudEventType;
+    }
     static string ExtractSource(Dictionary<string, JsonProperty> receivedCloudEvent) => ExtractHeader(receivedCloudEvent, CloudEventJsonStructuredConstants.SourceProperty);
 
     static string ExtractHeader(Dictionary<string, JsonProperty> receivedCloudEvent, string property) => receivedCloudEvent[property].Value.GetString()!;

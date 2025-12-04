@@ -22,6 +22,11 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
     internal required CloudEventHttpBinaryEnvelopeHandler EnvelopeHandler;
     internal required MetricCollector<long> InvalidMessageCounter;
     internal required MetricCollector<long> UnexpectedVersionCounter;
+    internal required CloudEventsConfiguration cloudEventsConfiguration;
+
+    class MyEvent
+    {
+    }
 
     [SetUp]
     public void SetUp()
@@ -34,6 +39,13 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
             ["ce-id"] = NativeMessageId,
             ["ce-time"] = "2023-10-10T10:00:00Z",
             ["ce-specversion"] = "1.0"
+        };
+        cloudEventsConfiguration = new CloudEventsConfiguration
+        {
+            TypeMappings = new Dictionary<string, Type[]>
+            {
+                { "com.example.someevent", [typeof(MyEvent)] }
+            }
         };
         Body = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new Dictionary<string, object>
         {
@@ -49,7 +61,7 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
         UnexpectedVersionCounter = new MetricCollector<long>(MeterFactory, "NServiceBus.Envelope.CloudEvents",
             "nservicebus.envelope.cloud_events.received.unexpected_version");
 
-        EnvelopeHandler = new CloudEventHttpBinaryEnvelopeHandler(new(MeterFactory, TestEndpointName));
+        EnvelopeHandler = new CloudEventHttpBinaryEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration);
     }
 
     [Test]
@@ -214,6 +226,7 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
             Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo(NativeHeaders["ce-time"]));
             Assert.That(actual.Headers.ContainsKey("data"), Is.False);
             Assert.That(actual.Headers.ContainsKey("some_other_property"), Is.False);
+            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.CloudEventHttpBinaryEnvelopeHandlerTests+MyEvent"));
         });
     }
 }
