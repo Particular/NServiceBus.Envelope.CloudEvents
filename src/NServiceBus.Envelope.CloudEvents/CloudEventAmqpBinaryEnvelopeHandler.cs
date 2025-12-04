@@ -33,12 +33,10 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelop
         return (headers, incomingBody);
     }
 
-    static Dictionary<string, string> ToCaseInsensitiveDictionary(IDictionary<string, string> incomingHeaders)
-    {
-        return incomingHeaders
-            .ToDictionary(p => p.Key.ToLowerInvariant(), p => p.Value,
+    static Dictionary<string, string> ToCaseInsensitiveDictionary(IDictionary<string, string> incomingHeaders) =>
+        incomingHeaders
+            .ToDictionary(p => p.Key, p => p.Value,
                 StringComparer.OrdinalIgnoreCase);
-    }
 
     static Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders)
     {

@@ -11,38 +11,30 @@ using Pipeline;
 using Transport;
 using NUnit.Framework;
 
-public class When_json_structured_message_received : NServiceBusAcceptanceTest
+public class When_http_binary_message_received : NServiceBusAcceptanceTest
 {
     [Test]
-    public async Task A_json_structured_cloud_event_is_received()
+    public async Task An_http_binary_cloud_event_is_received()
     {
         var context = await Scenario.Define<Context>()
             .WithEndpoint<Endpoint>(g => g.When(b =>
             {
                 // The following represents a CloudEvent that Azure Blob Storage generates
                 // to notify that a new blob item has been created.
+                // Azure sends CloudEvents as JSON Structured. Below is the equivalent
+                // in the HTTP Binary format.
                 // The headers are set in the CustomSerializationBehavior.
                 return b.SendLocal(new Message()
                 {
-                    SpecVersion = "1.0",
-                    Type = "Microsoft.Storage.BlobCreated",
-                    Source =
-                        "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Storage/storageAccounts/{storage-account}",
-                    Id = "9aeb0fdf-c01e-0131-0922-9eb54906e209",
-                    Time = "2019-11-18T15:13:39.4589254Z",
-                    Subject = "blobServices/default/containers/{storage-container}/blobs/{new-file}",
-                    Data = new NestedData()
-                    {
-                        Api = "PutBlockList",
-                        ClientRequestId = "4c5dd7fb-2c48-4a27-bb30-5361b5de920a",
-                        RequestId = "9aeb0fdf-c01e-0131-0922-9eb549000000",
-                        ETag = "0x8D76C39E4407333",
-                        ContentType = "image/png",
-                        ContentLength = 30699,
-                        BlobType = "BlockBlob",
-                        Url = "https://gridtesting.blob.core.windows.net/testcontainer/{new-file}",
-                        Sequencer = "000000000000000000000000000099240000000000c41c18"
-                    }
+                    Api = "PutBlockList",
+                    ClientRequestId = "4c5dd7fb-2c48-4a27-bb30-5361b5de920a",
+                    RequestId = "9aeb0fdf-c01e-0131-0922-9eb549000000",
+                    ETag = "0x8D76C39E4407333",
+                    ContentType = "image/png",
+                    ContentLength = 30699,
+                    BlobType = "BlockBlob",
+                    Url = "https://gridtesting.blob.core.windows.net/testcontainer/{new-file}",
+                    Sequencer = "000000000000000000000000000099240000000000c41c18"
                 });
             }))
             .Done(c => c.MessageReceived)
@@ -65,7 +57,14 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
 
             Dictionary<string, string> headers = outgoingMessage.Headers;
             headers.Clear();
-            headers[Headers.ContentType] = "application/cloudevents+json; charset=utf-8";
+            headers[Headers.ContentType] = "application/json; charset=utf-8";
+            headers["ce-specversion"] = "1.0";
+            headers["ce-type"] = "Microsoft.Storage.BlobCreated";
+            headers["ce-source"] = "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Storage/storageAccounts/{storage-account}";
+            headers["ce-id"] = "9aeb0fdf-c01e-0131-0922-9eb54906e209";
+            headers["ce-time"] = "2019-11-18T15:13:39.4589254Z";
+            headers["subject"] = "blobServices/default/containers/{storage-container}/blobs/{new-file}";
+
             // TODO remove once type decoder works
             headers[Headers.EnclosedMessageTypes] = typeof(Message).AssemblyQualifiedName;
 
@@ -104,7 +103,8 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
         }
     }
 
-    public class NestedData
+
+    public class Message : IMessage
     {
         public string Api { get; set; }
         public string ClientRequestId { get; set; }
@@ -115,16 +115,5 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
         public string BlobType { get; set; }
         public string Url { get; set; }
         public string Sequencer { get; set; }
-    }
-
-    public class Message : IMessage
-    {
-        public string SpecVersion { get; set; }
-        public string Type { get; set; }
-        public string Source { get; set; }
-        public string Id { get; set; }
-        public string Time { get; set; }
-        public string Subject { get; set; }
-        public NestedData Data { get; set; }
     }
 }

@@ -191,11 +191,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
     }
 
     public bool CanUnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders,
-        ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
-    {
-        var can = incomingHeaders.TryGetValue(Headers.ContentType, out var value) &&
-            (value == CloudEventJsonStructuredConstants.SupportedContentType || value.Contains(CloudEventJsonStructuredConstants.SupportedContentType));
-
-        return can;
-    }
+        ContextBag extensions, ReadOnlyMemory<byte> incomingBody) =>
+        incomingHeaders.TryGetValue(Headers.ContentType, out var value) &&
+        (value == CloudEventJsonStructuredConstants.SupportedContentType || value.Contains(CloudEventJsonStructuredConstants.SupportedContentType));
 }
