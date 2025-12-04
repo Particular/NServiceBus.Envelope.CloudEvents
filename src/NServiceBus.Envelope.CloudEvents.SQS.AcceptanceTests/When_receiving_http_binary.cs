@@ -1,9 +1,11 @@
 namespace NServiceBus.AcceptanceTests;
 
+using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.SQS.Model;
 using AcceptanceTesting;
 using AcceptanceTesting.Customization;
+using Configuration.AdvancedExtensibility;
 using EndpointTemplates;
 using Envelope.CloudEvents.SQS.AcceptanceTests;
 using NUnit.Framework;
@@ -64,13 +66,6 @@ public class When_receiving_http_binary : NServiceBusAcceptanceTest
                 DataType = "String"
             });
 
-        // TODO: remove once we have TypeMapping
-        messageAttributes.Add("NServiceBus.EnclosedMessageTypes", new MessageAttributeValue()
-        {
-            StringValue = typeof(Message).AssemblyQualifiedName,
-            DataType = "String",
-        });
-
         var sendMessageRequest = new SendMessageRequest
         {
             MessageAttributes = messageAttributes,
@@ -89,7 +84,18 @@ public class When_receiving_http_binary : NServiceBusAcceptanceTest
 
     public class Receiver : EndpointConfigurationBuilder
     {
-        public Receiver() => EndpointSetup<DefaultServer>();
+        public Receiver() => EndpointSetup<DefaultServer>(c =>
+        {
+            var jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            c.UseSerialization<SystemJsonSerializer>().Options(jsonSerializerOptions);
+
+            var settings = c.GetSettings();
+            var config = settings.Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsSetting);
+            config.TypeMappings.Add("com.example.someevent", [typeof(Message)]);
+        });
 
         public class MyMessageHandler : IHandleMessages<Message>
         {
