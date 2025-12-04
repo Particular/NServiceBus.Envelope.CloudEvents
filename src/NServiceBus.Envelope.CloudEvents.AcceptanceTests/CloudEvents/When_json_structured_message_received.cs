@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AcceptanceTesting;
+using Configuration.AdvancedExtensibility;
 using NServiceBus.AcceptanceTests;
 using NServiceBus.AcceptanceTests.EndpointTemplates;
 using Pipeline;
@@ -66,8 +67,6 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
             Dictionary<string, string> headers = outgoingMessage.Headers;
             headers.Clear();
             headers[Headers.ContentType] = "application/cloudevents+json; charset=utf-8";
-            // TODO remove once type decoder works
-            headers[Headers.EnclosedMessageTypes] = typeof(Message).AssemblyQualifiedName;
 
             return next(context);
         }
@@ -86,6 +85,9 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
         {
             EndpointSetup<DefaultServer>(c =>
             {
+                var config = c.GetSettings().Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsSetting);
+                config.TypeMappings.Add("Microsoft.Storage.BlobCreated", [typeof(Message)]);
+
                 c.Pipeline.Register("CustomSerializationBehavior", new CustomSerializationBehavior(),
                     "Serializing message");
             });

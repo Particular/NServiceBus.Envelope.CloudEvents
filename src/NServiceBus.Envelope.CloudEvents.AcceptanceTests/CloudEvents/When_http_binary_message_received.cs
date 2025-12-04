@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AcceptanceTesting;
+using Configuration.AdvancedExtensibility;
 using NServiceBus.AcceptanceTests;
 using NServiceBus.AcceptanceTests.EndpointTemplates;
 using Pipeline;
@@ -65,9 +66,6 @@ public class When_http_binary_message_received : NServiceBusAcceptanceTest
             headers["ce-time"] = "2019-11-18T15:13:39.4589254Z";
             headers["subject"] = "blobServices/default/containers/{storage-container}/blobs/{new-file}";
 
-            // TODO remove once type decoder works
-            headers[Headers.EnclosedMessageTypes] = typeof(Message).AssemblyQualifiedName;
-
             return next(context);
         }
     }
@@ -85,6 +83,9 @@ public class When_http_binary_message_received : NServiceBusAcceptanceTest
         {
             EndpointSetup<DefaultServer>(c =>
             {
+                var config = c.GetSettings().Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsSetting);
+                config.TypeMappings.Add("Microsoft.Storage.BlobCreated", [typeof(Message)]);
+
                 c.Pipeline.Register("CustomSerializationBehavior", new CustomSerializationBehavior(),
                     "Serializing message");
             });
