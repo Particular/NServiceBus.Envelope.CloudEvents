@@ -24,6 +24,10 @@ public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
         configuration.EnableInstallers();
         configuration.EnableCloudEvents();
 
+        var recoverability = configuration.Recoverability();
+        recoverability.Immediate(config => config.NumberOfRetries(0));
+        recoverability.Delayed(config => config.NumberOfRetries(0));
+
         //We set the default test execution timeout only when not explicitly set by the test
         if (settings.TestExecutionTimeout == null || settings.TestExecutionTimeout.Value <= TimeSpan.FromSeconds(120))
         {

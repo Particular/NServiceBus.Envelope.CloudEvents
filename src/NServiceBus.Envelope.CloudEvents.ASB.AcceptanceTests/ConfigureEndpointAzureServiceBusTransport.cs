@@ -34,6 +34,10 @@ public class ConfigureEndpointAzureServiceBusTransport : IConfigureEndpointTestE
         configuration.UseTransport(transport);
         configuration.EnableCloudEvents();
 
+        var recoverability = configuration.Recoverability();
+        recoverability.Immediate(config => config.NumberOfRetries(0));
+        recoverability.Delayed(config => config.NumberOfRetries(0));
+
         configuration.RegisterComponents(c => c.AddSingleton<IMutateOutgoingTransportMessages, TestIndependenceMutator>());
         configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
 
