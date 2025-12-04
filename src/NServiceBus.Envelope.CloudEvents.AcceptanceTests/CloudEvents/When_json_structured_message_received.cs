@@ -90,13 +90,8 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
             });
         }
 
-        class Handler : IHandleMessages<Message>
+        class Handler(Context testContext) : IHandleMessages<Message>
         {
-            public Handler(Context context)
-            {
-                testContext = context;
-            }
-
             public Task Handle(Message message, IMessageHandlerContext context)
             {
                 testContext.MessageId = context.MessageId;
@@ -105,8 +100,6 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
 
                 return Task.CompletedTask;
             }
-
-            Context testContext;
         }
     }
 
