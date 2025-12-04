@@ -66,7 +66,7 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
             headers.Clear();
             headers[Headers.ContentType] = "application/cloudevents+json; charset=utf-8";
             // TODO remove once type decoder works
-            headers[Headers.EnclosedMessageTypes] = "NServiceBus.AcceptanceTests.MessageId.When_json_structured_message_received+Message, NServiceBus.Envelope.CloudEvents.AcceptanceTests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+            headers[Headers.EnclosedMessageTypes] = "NServiceBus.Envelope.CloudEvents.AcceptanceTests.CloudEvents.When_json_structured_message_received+Message, NServiceBus.Envelope.CloudEvents.AcceptanceTests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
 
             return next(context);
         }
