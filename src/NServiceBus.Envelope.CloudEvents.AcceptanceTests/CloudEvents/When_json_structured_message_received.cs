@@ -19,6 +19,8 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
         var context = await Scenario.Define<Context>()
             .WithEndpoint<Endpoint>(g => g.When(b =>
             {
+                // The following represents a CloudEvent that Azure Blob Storage generates
+                // to notify that a new blob item has been created 
                 return b.SendLocal(new Message()
                 {
                     SpecVersion = "1.0",
@@ -54,6 +56,8 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
 
     class CustomSerializationBehavior : IBehavior<IDispatchContext, IDispatchContext>
     {
+        // The custom serializer is required to ensure the outgoing message contains
+        // only the specific cloud events required headers and not the NServiceBus ones. 
         public Task Invoke(IDispatchContext context, Func<IDispatchContext, Task> next)
         {
             OutgoingMessage outgoingMessage = context.Operations.First().Message;
