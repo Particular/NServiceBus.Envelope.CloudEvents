@@ -1,9 +1,9 @@
 namespace NServiceBus.AcceptanceTests;
 
 using System.Threading.Tasks;
+using Amazon.SQS.Model;
 using AcceptanceTesting;
 using AcceptanceTesting.Customization;
-using Amazon.SQS.Model;
 using EndpointTemplates;
 using Envelope.CloudEvents.SQS.AcceptanceTests;
 using NUnit.Framework;
@@ -48,7 +48,20 @@ public class When_receiving_http_binary : NServiceBusAcceptanceTest
             QueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(TEndpoint)), SetupFixture.NamePrefix)
         }).ConfigureAwait(false);
 
-        var messageAttributes = messageHeaders.ToDictionary(header => header.Key, header => new MessageAttributeValue { StringValue = header.Value });
+        var messageAttributes = messageHeaders.ToDictionary(
+            header => header.Key,
+            header => new MessageAttributeValue
+            {
+                StringValue = header.Value,
+                DataType = "String"
+            });
+
+        // TODO: remove once we have TypeMapping
+        messageAttributes.Add("NServiceBus.EnclosedMessageTypes", new MessageAttributeValue()
+        {
+            StringValue = typeof(Message).AssemblyQualifiedName,
+            DataType = "String",
+        });
 
         var sendMessageRequest = new SendMessageRequest
         {
@@ -57,7 +70,7 @@ public class When_receiving_http_binary : NServiceBusAcceptanceTest
             MessageBody = messageBody
         };
 
-        await sqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
+        _ = await sqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
     }
 
     public class Context : ScenarioContext

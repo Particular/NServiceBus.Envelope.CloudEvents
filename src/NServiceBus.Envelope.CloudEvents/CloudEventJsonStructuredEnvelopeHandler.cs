@@ -80,9 +80,13 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
         headersCopy[Headers.MessageId] = ExtractId(receivedCloudEvent);
         headersCopy[Headers.ReplyToAddress] = ExtractSource(receivedCloudEvent);
         headersCopy[Headers.EnclosedMessageTypes] = ExtractType(receivedCloudEvent);
-        if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.TimeProperty, out var time))
+        if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.TimeProperty, out var time) && time.Value.ValueKind != JsonValueKind.Null)
         {
-            headersCopy[Headers.TimeSent] = time.Value.GetString()!;
+            /*
+             * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
+             * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
+             */
+            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time.Value.GetString()!));
         }
 
         if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.DataContentTypeProperty, out var dataContentType))
@@ -199,11 +203,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
     }
 
     public bool CanUnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders,
-        ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
-    {
-        var can = incomingHeaders.TryGetValue(Headers.ContentType, out var value) &&
-            (value == CloudEventJsonStructuredConstants.SupportedContentType || value.Contains(CloudEventJsonStructuredConstants.SupportedContentType));
-
-        return can;
-    }
+        ContextBag extensions, ReadOnlyMemory<byte> incomingBody) =>
+        incomingHeaders.TryGetValue(Headers.ContentType, out var value) &&
+        (value == CloudEventJsonStructuredConstants.SupportedContentType || value.Contains(CloudEventJsonStructuredConstants.SupportedContentType));
 }

@@ -33,12 +33,10 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
         return (headers, incomingBody);
     }
 
-    static Dictionary<string, string> ToCaseInsensitiveDictionary(IDictionary<string, string> incomingHeaders)
-    {
-        return incomingHeaders
-            .ToDictionary(p => p.Key.ToLowerInvariant(), p => p.Value,
+    static Dictionary<string, string> ToCaseInsensitiveDictionary(IDictionary<string, string> incomingHeaders) =>
+        incomingHeaders
+            .ToDictionary(p => p.Key, p => p.Value,
                 StringComparer.OrdinalIgnoreCase);
-    }
 
     Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders)
     {
@@ -49,7 +47,11 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
         headersCopy[Headers.EnclosedMessageTypes] = ExtractType(existingHeaders);
         if (existingHeaders.TryGetValue(CloudEventAmqpBinaryConstants.TimeProperty, out var time))
         {
-            headersCopy[Headers.TimeSent] = time;
+            /*
+             * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
+             * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
+             */
+            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time));
         }
 
         return headersCopy;

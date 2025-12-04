@@ -3,6 +3,7 @@ namespace NServiceBus.AcceptanceTests;
 using System;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Envelope.CloudEvents.SQS.AcceptanceTests;
 using NUnit.Framework;
 
 [SetUpFixture]
@@ -38,10 +39,10 @@ public class SetupFixture
     [OneTimeTearDown]
     public async Task OneTimeTearDown()
     {
-        // using var sqsClient = ClientFactories.CreateSqsClient();
-        // using var snsClient = ClientFactories.CreateSnsClient();
-        // using var s3Client = ClientFactories.CreateS3Client();
-        //
-        // await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
+        using var sqsClient = ClientFactories.CreateSqsClient();
+        using var snsClient = ClientFactories.CreateSnsClient();
+        using var s3Client = ClientFactories.CreateS3Client();
+
+        await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
     }
 }
