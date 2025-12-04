@@ -81,7 +81,11 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
         headersCopy[Headers.ReplyToAddress] = ExtractSource(receivedCloudEvent);
         if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.TimeProperty, out var time))
         {
-            headersCopy[Headers.TimeSent] = time.Value.GetString()!;
+            /*
+             * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
+             * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
+             */
+            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time.Value.GetString()!));
         }
 
         if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.DataContentTypeProperty, out var dataContentType))

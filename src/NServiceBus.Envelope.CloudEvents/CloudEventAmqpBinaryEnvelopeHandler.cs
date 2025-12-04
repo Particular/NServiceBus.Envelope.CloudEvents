@@ -46,7 +46,11 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics) : IEnvelop
         headersCopy[Headers.ReplyToAddress] = ExtractSource(existingHeaders);
         if (existingHeaders.TryGetValue(CloudEventAmqpBinaryConstants.TimeProperty, out var time))
         {
-            headersCopy[Headers.TimeSent] = time;
+            /*
+             * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
+             * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
+             */
+            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time));
         }
 
         return headersCopy;
