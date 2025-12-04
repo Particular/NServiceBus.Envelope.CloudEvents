@@ -79,7 +79,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics) : IEnv
 
         headersCopy[Headers.MessageId] = ExtractId(receivedCloudEvent);
         headersCopy[Headers.ReplyToAddress] = ExtractSource(receivedCloudEvent);
-        if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.TimeProperty, out var time))
+        if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.TimeProperty, out var time) && time.Value.ValueKind != JsonValueKind.Null)
         {
             /*
              * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
