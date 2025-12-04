@@ -31,14 +31,22 @@ public class When_receiving_http_binary : NServiceBusAcceptanceTest
     };
 
     [Test]
-    public async Task Should_receive_message() =>
-        await Scenario.Define<Context>()
+    public async Task Should_receive_message()
+    {
+        var context = await Scenario.Define<Context>()
             .WithEndpoint<Receiver>(c => c.When(async _ =>
             {
                 await SendTo<Receiver>(headers, body).ConfigureAwait(false);
             }))
             .Done(c => c.Received)
             .Run();
+
+        Assert.That(context.Received, Is.True);
+        Assert.That(context.ReceivedMessage, Is.Not.Null);
+        Assert.That(context.ReceivedMessage.AppInfoA, Is.EqualTo("abc"));
+        Assert.That(context.ReceivedMessage.AppInfoB, Is.EqualTo(123));
+        Assert.That(context.ReceivedMessage.AppInfoC, Is.EqualTo(true));
+    }
 
     static async Task SendTo<TEndpoint>(Dictionary<string, string> messageHeaders, string messageBody)
     {
