@@ -1,13 +1,14 @@
-﻿namespace NServiceBus.AcceptanceTests.MessageId;
+﻿namespace NServiceBus.Envelope.CloudEvents.AcceptanceTests.CloudEvents;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AcceptanceTesting;
-using EndpointTemplates;
+using NServiceBus.AcceptanceTesting;
+using NServiceBus.AcceptanceTests;
+using NServiceBus.AcceptanceTests.EndpointTemplates;
 using NServiceBus.Pipeline;
-using Transport;
+using NServiceBus.Transport;
 using NUnit.Framework;
 
 public class When_json_structured_message_received : NServiceBusAcceptanceTest
