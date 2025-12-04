@@ -18,7 +18,6 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     internal required string TestEndpointName;
     internal required string NativeMessageId;
     internal required Dictionary<string, string> NativeHeaders;
-    internal required CloudEventAmqpBinaryEnvelopeHandler envelopeHandler;
     internal required CloudEventsConfiguration cloudEventsConfiguration;
     internal required CloudEventAmqpBinaryEnvelopeHandler EnvelopeHandler;
     internal required MetricCollector<long> InvalidMessageCounter;
