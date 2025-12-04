@@ -59,7 +59,7 @@ public class When_receiving_http_binary : NServiceBusAcceptanceTest
         // TODO: remove once we have TypeMapping
         messageAttributes.Add("NServiceBus.EnclosedMessageTypes", new MessageAttributeValue()
         {
-            StringValue =typeof(Message).AssemblyQualifiedName,
+            StringValue = typeof(Message).AssemblyQualifiedName,
             DataType = "String",
         });
 
