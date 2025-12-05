@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
 env:
   DOTNET_NOLOGO: true
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
 defaults:
   run:
     shell: pwsh
@@ -51,6 +54,12 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_ACI_CREDENTIALS }}
           enable-AzPSSession: true
+      - name: Setup Azure Service Bus
+        uses: Particular/setup-azureservicebus-action@v2.0.0
+        with:
+          connection-string-name: AzureServiceBus_ConnectionString
+          azure-credentials: ${{ secrets.AZURE_ACI_CREDENTIALS }}
+          tag: CloudEvents
       - name: Run tests
         uses: Particular/run-tests-action@v1.7.0
         with:
