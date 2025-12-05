@@ -18,7 +18,7 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
     internal required string TestEndpointName;
     internal required string NativeMessageId;
     internal required Dictionary<string, string> NativeHeaders;
-    internal required Dictionary<string, object> Payload;
+    internal required Dictionary<string, object?> Payload;
     internal required ReadOnlyMemory<byte> Body;
     internal required CloudEventJsonStructuredEnvelopeHandler EnvelopeHandler;
     internal required MetricCollector<long> InvalidMessageCounter;
@@ -33,7 +33,7 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
     public void SetUp()
     {
         NativeMessageId = Guid.NewGuid().ToString();
-        Payload = new Dictionary<string, object>
+        Payload = new Dictionary<string, object?>
         {
             ["type"] = "com.example.someevent",
             ["source"] = "/mycontext",
@@ -118,7 +118,7 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
         Assert.Multiple(() =>
         {
             AssertTypicalFields(actual);
-            Assert.That(actual.Body.Span.SequenceEqual(Encoding.UTF8.GetBytes(Payload["data"].ToString()!)));
+            Assert.That(actual.Body.Span.SequenceEqual(Encoding.UTF8.GetBytes(Payload["data"]!.ToString()!)));
         });
     }
 
@@ -136,6 +136,46 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
             AssertTypicalFields(actual);
             Assert.That(actual.Body.Span.SequenceEqual(Encoding.UTF8.GetBytes(rawPayload)));
         });
+    }
+
+    [Test]
+    public void Should_ignore_missing_time()
+    {
+        Payload.Remove("time");
+
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        AssertTypicalFields(actual, shouldHaveTime: false);
+    }
+
+    [Test]
+    public void Should_ignore_empty_time()
+    {
+        Payload["time"] = "";
+
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        AssertTypicalFields(actual, shouldHaveTime: false);
+    }
+
+    [Test]
+    public void Should_ignore_null_time()
+    {
+        Payload["time"] = null;
+
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        AssertTypicalFields(actual, shouldHaveTime: false);
+    }
+
+    [Test]
+    public void Should_ignore_string_null_time()
+    {
+        Payload["time"] = "null";
+
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        AssertTypicalFields(actual, shouldHaveTime: false);
     }
 
     [Test]
@@ -330,7 +370,7 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
         return new IncomingMessage(NativeMessageId, convertedHeader, convertedBody);
     }
 
-    void AssertTypicalFields(IncomingMessage actual)
+    void AssertTypicalFields(IncomingMessage actual, bool shouldHaveTime = true)
     {
         Assert.Multiple(() =>
         {
@@ -338,7 +378,11 @@ class CloudEventJsonStructuredEnvelopeHandlerTests
             Assert.That(actual.NativeMessageId, Is.EqualTo(NativeMessageId));
             Assert.That(actual.Headers[Headers.MessageId], Is.EqualTo(Payload["id"]));
             Assert.That(actual.Headers[Headers.ReplyToAddress], Is.EqualTo(Payload["source"]));
-            Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo(Payload["time"]));
+            if (shouldHaveTime)
+            {
+                Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo("2023-10-10 10:00:00:000000 Z"));
+            }
+
             Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.CloudEventJsonStructuredEnvelopeHandlerTests+MyEvent"));
             Assert.That(actual.Headers["id"], Is.EqualTo(Payload["id"]));
             Assert.That(actual.Headers["type"], Is.EqualTo(Payload["type"]));

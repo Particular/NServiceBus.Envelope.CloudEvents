@@ -19,6 +19,7 @@ static class CloudEventJsonStructuredConstants
     internal const string SupportedVersion = "1.0";
     internal const string SupportedContentType = "application/cloudevents+json";
     internal const string JsonContentType = "application/json";
+    internal const string NullLiteral = "null";
 
     internal static readonly HashSet<string> HeadersToIgnore = [DataProperty, DataBase64Property];
     internal static readonly string[] RequiredProperties = [IdProperty, SourceProperty, TypeProperty];
@@ -82,11 +83,15 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
         headersCopy[Headers.EnclosedMessageTypes] = ExtractType(receivedCloudEvent);
         if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.TimeProperty, out var time) && time.Value.ValueKind != JsonValueKind.Null)
         {
-            /*
-             * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
-             * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
-             */
-            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time.Value.GetString()!));
+            var timeValue = time.Value.GetString()!;
+            if (!string.IsNullOrEmpty(timeValue) && timeValue != CloudEventJsonStructuredConstants.NullLiteral)
+            {
+                /*
+                 * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
+                 * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
+                 */
+                headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(timeValue));
+            }
         }
 
         if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.DataContentTypeProperty, out var dataContentType))

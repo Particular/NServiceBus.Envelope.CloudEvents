@@ -15,6 +15,7 @@ class CloudEventHttpBinaryEnvelopeHandlerConstants
     internal const string TimeProperty = HeaderPrefix + "time";
     internal const string VersionProperty = HeaderPrefix + "specversion";
     internal const string SupportedVersion = "1.0";
+    internal const string NullLiteral = "null";
 
     internal static readonly string[] RequiredHeaders = [IdProperty, SourceProperty, TypeProperty];
 }
@@ -47,11 +48,14 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
         headersCopy[Headers.EnclosedMessageTypes] = ExtractType(existingHeaders);
         if (existingHeaders.TryGetValue(CloudEventHttpBinaryEnvelopeHandlerConstants.TimeProperty, out var time))
         {
-            /*
-             * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
-             * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
-             */
-            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time));
+            if (!string.IsNullOrEmpty(time) && time != CloudEventHttpBinaryEnvelopeHandlerConstants.NullLiteral)
+            {
+                /*
+                 * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
+                 * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
+                 */
+                headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time));
+            }
         }
 
         return headersCopy;

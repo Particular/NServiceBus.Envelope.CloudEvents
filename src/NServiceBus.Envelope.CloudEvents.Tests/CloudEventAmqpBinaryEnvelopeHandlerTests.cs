@@ -17,7 +17,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     internal required TestMeterFactory MeterFactory;
     internal required string TestEndpointName;
     internal required string NativeMessageId;
-    internal required Dictionary<string, string> NativeHeaders;
+    internal required Dictionary<string, string?> NativeHeaders;
     internal required CloudEventsConfiguration cloudEventsConfiguration;
     internal required CloudEventAmqpBinaryEnvelopeHandler EnvelopeHandler;
     internal required MetricCollector<long> InvalidMessageCounter;
@@ -39,7 +39,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
                 { "com.example.someevent", [typeof(MyEvent)]}
             }
         };
-        NativeHeaders = new Dictionary<string, string>
+        NativeHeaders = new Dictionary<string, string?>
         {
             ["cloudEvents:type"] = "com.example.someevent",
             ["cloudEvents:source"] = "/mycontext",
@@ -69,14 +69,51 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     {
         IncomingMessage actual = RunEnvelopHandlerTest();
 
-        var invalidMessageCounterSnapshot = InvalidMessageCounter.GetMeasurementSnapshot();
-        var unexpectedVersionCounterSnapshot = UnexpectedVersionCounter.GetMeasurementSnapshot();
-
         Assert.Multiple(() =>
         {
             AssertTypicalFields(actual);
             Assert.That(actual.Body.Span.SequenceEqual(Body.Span));
         });
+    }
+
+    [Test]
+    public void Should_ignore_missing_time()
+    {
+        NativeHeaders.Remove("time");
+
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        AssertTypicalFields(actual, shouldHaveTime: false);
+    }
+
+    [Test]
+    public void Should_ignore_empty_time()
+    {
+        NativeHeaders["time"] = "";
+
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        AssertTypicalFields(actual, shouldHaveTime: false);
+    }
+
+    [Test]
+    public void Should_ignore_null_time()
+    {
+        NativeHeaders["time"] = null;
+
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        AssertTypicalFields(actual, shouldHaveTime: false);
+    }
+
+    [Test]
+    public void Should_ignore_string_null_time()
+    {
+        NativeHeaders["time"] = "null";
+
+        IncomingMessage actual = RunEnvelopHandlerTest();
+
+        AssertTypicalFields(actual, shouldHaveTime: false);
     }
 
     [Test]
@@ -196,7 +233,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     [Test]
     public void Should_support_message_with_correct_headers()
     {
-        var actual = EnvelopeHandler.CanUnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), Body);
+        var actual = EnvelopeHandler.CanUnwrapEnvelope(NativeMessageId, NativeHeaders!, new ContextBag(), Body);
         Assert.That(actual, Is.True);
     }
 
@@ -207,18 +244,18 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     public void Should_not_support_message_with_missing_headers(string property)
     {
         NativeHeaders.Remove(property);
-        var actual = EnvelopeHandler.CanUnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), Body);
+        var actual = EnvelopeHandler.CanUnwrapEnvelope(NativeMessageId, NativeHeaders!, new ContextBag(), Body);
         Assert.That(actual, Is.False);
     }
 
     IncomingMessage RunEnvelopHandlerTest()
     {
         var upperCaseHeaders = NativeHeaders.ToDictionary(k => k.Key.ToUpper(), k => k.Value);
-        (Dictionary<string, string> convertedHeader, ReadOnlyMemory<byte> convertedBody) = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, upperCaseHeaders, new ContextBag(), Body);
+        (Dictionary<string, string> convertedHeader, ReadOnlyMemory<byte> convertedBody) = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, upperCaseHeaders!, new ContextBag(), Body);
         return new IncomingMessage(NativeMessageId, convertedHeader, convertedBody);
     }
 
-    void AssertTypicalFields(IncomingMessage actual)
+    void AssertTypicalFields(IncomingMessage actual, bool shouldHaveTime = true)
     {
         Assert.Multiple(() =>
         {
@@ -226,7 +263,11 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
             Assert.That(actual.NativeMessageId, Is.EqualTo(NativeMessageId));
             Assert.That(actual.Headers[Headers.MessageId], Is.EqualTo(NativeMessageId));
             Assert.That(actual.Headers[Headers.ReplyToAddress], Is.EqualTo(NativeHeaders["cloudEvents:source"]));
-            Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo(NativeHeaders["cloudEvents:time"]));
+            if (shouldHaveTime)
+            {
+                Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo("2023-10-10 10:00:00:000000 Z"));
+            }
+
             Assert.That(actual.Headers.ContainsKey("data"), Is.False);
             Assert.That(actual.Headers.ContainsKey("some_other_property"), Is.False);
             Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.CloudEventAmqpBinaryEnvelopeHandlerTests+MyEvent"));
