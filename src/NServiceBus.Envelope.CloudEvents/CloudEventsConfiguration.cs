@@ -12,5 +12,10 @@ public class CloudEventsConfiguration
     /// </summary>
     public Dictionary<string, Type[]> TypeMappings { get; } = [];
 
-    public List<EnvelopeUnwrapper> EnvelopeUnwrappers { get; } = [new CloudEventJsonStructuredEnvelopeUnwrapper()];
+    public List<EnvelopeUnwrapper> EnvelopeUnwrappers { get; } =
+    [
+        new CloudEventJsonStructuredEnvelopeUnwrapper(),
+        new CloudEventHttpBinaryEnvelopeUnwrapper(),
+        new CloudEventAmqpBinaryEnvelopeUnwrapper()
+    ];
 }

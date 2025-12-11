@@ -19,7 +19,7 @@ class CloudEventsFeature : Feature
 
         foreach (var unwrapper in cloudEventsConfiguration.EnvelopeUnwrappers)
         {
-            _ = context.Services.AddSingleton(typeof(IEnvelopeHandler), unwrapper.UnwrapperType);
+            unwrapper.RegisterUnwrapper(context);
         }
 
         context.Settings.AddStartupDiagnosticsSection("NServiceBus.Envelope.CloudEvents",
