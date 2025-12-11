@@ -4,6 +4,3 @@ public class CloudEventJsonStructuredEnvelopeUnwrapper() : EnvelopeUnwrapper(typ
 {
     public EnvelopeHandlingMode EnvelopeHandlingMode { get; set; } = EnvelopeHandlingMode.Strict;
 }
-
-public class CloudEventHttpBinaryEnvelopeUnwrapper() : EnvelopeUnwrapper(typeof(CloudEventHttpBinaryEnvelopeHandler));
-public class CloudEventAmqpBinaryEnvelopeUnwrapper() : EnvelopeUnwrapper(typeof(CloudEventAmqpBinaryEnvelopeHandler));
