@@ -15,9 +15,9 @@ class CloudEventsFeature : Feature
             var endpointName = context.Settings.EndpointName();
             return new CloudEventsMetrics(sp.GetRequiredService<IMeterFactory>(), endpointName);
         });
-        _ = context.Services.AddSingleton<IEnvelopeHandler, CloudEventJsonStructuredEnvelopeHandler>();
-        _ = context.Services.AddSingleton<IEnvelopeHandler, CloudEventAmqpBinaryEnvelopeHandler>();
-        _ = context.Services.AddSingleton<IEnvelopeHandler, CloudEventHttpBinaryEnvelopeHandler>();
+        context.AddEnvelopeHandler<CloudEventJsonStructuredEnvelopeHandler>();
+        context.AddEnvelopeHandler<CloudEventAmqpBinaryEnvelopeHandler>();
+        context.AddEnvelopeHandler<CloudEventHttpBinaryEnvelopeHandler>();
 
         context.Settings.AddStartupDiagnosticsSection("NServiceBus.Envelope.CloudEvents",
             new

@@ -28,12 +28,6 @@ public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
         recoverability.Immediate(config => config.NumberOfRetries(0));
         recoverability.Delayed(config => config.NumberOfRetries(0));
 
-        //We set the default test execution timeout only when not explicitly set by the test
-        if (settings.TestExecutionTimeout == null || settings.TestExecutionTimeout.Value <= TimeSpan.FromSeconds(120))
-        {
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
-        }
-
         ApplyMappingsToSupportMultipleInheritance(endpointName, transport);
 
         return Task.CompletedTask;

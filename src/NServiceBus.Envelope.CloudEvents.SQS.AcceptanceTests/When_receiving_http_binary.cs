@@ -32,8 +32,8 @@ public class When_receiving_http_binary : NServiceBusAcceptanceTest
         { "content-type", "application/json" },
     };
 
-    [Test]
-    public async Task Should_receive_message()
+    [Test, CancelAfter(120_000)]
+    public async Task Should_receive_message(CancellationToken cancellationToken = default)
     {
         var context = await Scenario.Define<Context>()
             .WithEndpoint<Receiver>(c => c.When(async _ =>
@@ -41,7 +41,7 @@ public class When_receiving_http_binary : NServiceBusAcceptanceTest
                 await SendTo<Receiver>(headers, body).ConfigureAwait(false);
             }))
             .Done(c => c.Received)
-            .Run();
+            .Run(cancellationToken);
 
         Assert.That(context.Received, Is.True);
         Assert.That(context.ReceivedMessage, Is.Not.Null);
