@@ -1,12 +1,12 @@
 namespace NServiceBus;
 
 using Features;
-using Microsoft.Extensions.DependencyInjection;
 
-public abstract class EnvelopeUnwrapper(Type unwrapperType)
+/// <summary>
+/// Base class to define envelope unwrappers.
+/// </summary>
+public abstract class EnvelopeUnwrapper
 {
-    internal void RegisterUnwrapper(FeatureConfigurationContext context)
-    {
-        _ = context.Services.AddSingleton(typeof(IEnvelopeHandler), unwrapperType);
-    }
+    internal abstract void RegisterUnwrapper(FeatureConfigurationContext context);
+    internal void RegisterUnwrapper<THandler>(FeatureConfigurationContext context) where THandler : class, IEnvelopeHandler => context.AddEnvelopeHandler<THandler>();
 }
