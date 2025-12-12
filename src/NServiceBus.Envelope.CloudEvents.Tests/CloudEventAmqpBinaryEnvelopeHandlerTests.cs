@@ -34,7 +34,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
         NativeMessageId = Guid.NewGuid().ToString();
         cloudEventsConfiguration = new CloudEventsConfiguration
         {
-            TypeMappings = new Dictionary<string, Type[]>
+            TypeMappings =
             {
                 { "com.example.someevent", [typeof(MyEvent)]}
             }
