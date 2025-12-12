@@ -1,4 +1,4 @@
-namespace NServiceBus;
+namespace NServiceBus.Envelope.CloudEvents;
 
 using Features;
 

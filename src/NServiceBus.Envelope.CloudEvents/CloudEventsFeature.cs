@@ -17,7 +17,7 @@ class CloudEventsFeature : Feature
             return new CloudEventsMetrics(sp.GetRequiredService<IMeterFactory>(), endpointName);
         });
 
-        foreach (var unwrapper in cloudEventsConfiguration.EnvelopeUnwrappers.Values)
+        foreach (var unwrapper in cloudEventsConfiguration.EnvelopeUnwrappers)
         {
             unwrapper.RegisterUnwrapper(context);
         }
