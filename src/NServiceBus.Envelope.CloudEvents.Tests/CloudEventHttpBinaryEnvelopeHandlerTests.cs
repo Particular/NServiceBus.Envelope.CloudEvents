@@ -42,7 +42,7 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
         };
         cloudEventsConfiguration = new CloudEventsConfiguration
         {
-            TypeMappings = new Dictionary<string, Type[]>
+            TypeMappings =
             {
                 { "com.example.someevent", [typeof(MyEvent)] }
             }
