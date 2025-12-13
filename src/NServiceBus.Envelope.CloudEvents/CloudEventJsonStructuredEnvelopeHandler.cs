@@ -33,7 +33,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
     public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body) UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders, ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
     {
-        var mode = config.EnvelopeUnwrappers.FindEnvelopeUnwrapper<CloudEventJsonStructuredEnvelopeUnwrapper>().EnvelopeHandlingMode;
+        var mode = config.EnvelopeUnwrappers.Find<CloudEventJsonStructuredEnvelopeUnwrapper>().EnvelopeHandlingMode;
         if (mode == JsonStructureEnvelopeHandlingMode.Strict)
         {
             // behavior for strict
