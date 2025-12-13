@@ -7,6 +7,7 @@ using AcceptanceTesting;
 using AcceptanceTesting.Customization;
 using Configuration.AdvancedExtensibility;
 using EndpointTemplates;
+using Envelope.CloudEvents;
 using Envelope.CloudEvents.SQS.AcceptanceTests;
 using NUnit.Framework;
 
