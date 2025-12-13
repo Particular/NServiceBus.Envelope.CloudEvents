@@ -7,7 +7,7 @@ using System.Collections;
 /// </summary>
 public class EnvelopeUnwrappers : IEnumerable<EnvelopeUnwrapper>
 {
-    internal OrderedDictionary<Type, EnvelopeUnwrapper> Unwrappers { get; } = new()
+    OrderedDictionary<Type, EnvelopeUnwrapper> Unwrappers { get; } = new()
     {
         { typeof(CloudEventJsonStructuredEnvelopeUnwrapper), new CloudEventJsonStructuredEnvelopeUnwrapper() },
         { typeof(CloudEventHttpBinaryEnvelopeUnwrapper), new CloudEventHttpBinaryEnvelopeUnwrapper() },
