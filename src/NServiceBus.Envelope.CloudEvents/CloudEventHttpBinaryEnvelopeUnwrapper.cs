@@ -7,5 +7,9 @@ using Features;
 /// </summary>
 public class CloudEventHttpBinaryEnvelopeUnwrapper() : EnvelopeUnwrapper
 {
-    internal override void RegisterUnwrapper(FeatureConfigurationContext context) => RegisterUnwrapper<CloudEventHttpBinaryEnvelopeHandler>(context);
+    internal override void RegisterUnwrapper(FeatureConfigurationContext context, Action<object> unwrapperDiagnosticWriter)
+    {
+        RegisterUnwrapper<CloudEventHttpBinaryEnvelopeHandler>(context);
+        unwrapperDiagnosticWriter(new { EnvelopeHandler = typeof(CloudEventHttpBinaryEnvelopeHandler) });
+    }
 }

@@ -17,22 +17,17 @@ class CloudEventsFeature : Feature
             return new CloudEventsMetrics(sp.GetRequiredService<IMeterFactory>(), endpointName);
         });
 
+        List<object> unwrappersDiagnostics = [];
         foreach (var unwrapper in cloudEventsConfiguration.EnvelopeUnwrappers)
         {
-            unwrapper.RegisterUnwrapper(context);
+            unwrapper.RegisterUnwrapper(context, obj => unwrappersDiagnostics.Add(obj));
         }
 
         context.Settings.AddStartupDiagnosticsSection("NServiceBus.Envelope.CloudEvents",
             new
             {
-                RegisteredEnvelopeHandlers = new[]
-                {
-                    nameof(CloudEventJsonStructuredEnvelopeHandler),
-                    nameof(CloudEventAmqpBinaryEnvelopeHandler),
-                    nameof(CloudEventHttpBinaryEnvelopeHandler)
-                },
-                // TODO list here all the settings from CloudEventsConfiguration
-                Configuration = ""
+                RegisteredEnvelopeHandlers = unwrappersDiagnostics,
+                cloudEventsConfiguration.TypeMappings
             });
     }
 }

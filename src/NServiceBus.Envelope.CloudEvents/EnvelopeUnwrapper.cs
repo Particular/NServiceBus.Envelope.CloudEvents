@@ -7,6 +7,6 @@ using Features;
 /// </summary>
 public abstract class EnvelopeUnwrapper
 {
-    internal abstract void RegisterUnwrapper(FeatureConfigurationContext context);
+    internal abstract void RegisterUnwrapper(FeatureConfigurationContext context, Action<object> unwrapperDiagnosticWriter);
     internal void RegisterUnwrapper<THandler>(FeatureConfigurationContext context) where THandler : class, IEnvelopeHandler => context.AddEnvelopeHandler<THandler>();
 }

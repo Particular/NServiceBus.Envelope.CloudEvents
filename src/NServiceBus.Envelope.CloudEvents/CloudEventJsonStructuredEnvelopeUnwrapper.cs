@@ -7,7 +7,15 @@ using Features;
 /// </summary>
 public class CloudEventJsonStructuredEnvelopeUnwrapper() : EnvelopeUnwrapper
 {
-    internal override void RegisterUnwrapper(FeatureConfigurationContext context) => RegisterUnwrapper<CloudEventJsonStructuredEnvelopeHandler>(context);
+    internal override void RegisterUnwrapper(FeatureConfigurationContext context, Action<object> unwrapperDiagnosticWriter)
+    {
+        RegisterUnwrapper<CloudEventJsonStructuredEnvelopeHandler>(context);
+        unwrapperDiagnosticWriter(new
+        {
+            EnvelopeHandler = typeof(CloudEventHttpBinaryEnvelopeHandler),
+            EnvelopeHandlingMode = EnvelopeHandlingMode.ToString()
+        });
+    }
 
     /// <summary>
     /// Determines the envelope handling behavior. In strict mode the unwrapper expects the correct Content-Type header. In permissive mode
