@@ -24,7 +24,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
 {
     static readonly ILog Log = LogManager.GetLogger<CloudEventAmqpBinaryEnvelopeHandler>();
 
-    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body) UnwrapEnvelope(
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? UnwrapEnvelope(
         string nativeMessageId, IDictionary<string, string> incomingHeaders,
         ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
     {
@@ -115,6 +115,4 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
     }
 
     static bool HasRequiredHeaders(IDictionary<string, string> incomingHeaders) => CloudEventAmqpBinaryConstants.RequiredHeaders.All(incomingHeaders.ContainsKey);
-
-    public bool CanUnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders, ContextBag extensions, ReadOnlyMemory<byte> incomingBody) => CloudEventAmqpBinaryConstants.RequiredHeaders.All(incomingHeaders.ContainsKey);
 }

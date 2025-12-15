@@ -1,7 +1,7 @@
 namespace NServiceBus.Envelope.CloudEvents;
 
 /// <summary>
-/// TODO
+/// Configuration settings for CloudEvents envelope handling.
 /// </summary>
 public class CloudEventsConfiguration
 {

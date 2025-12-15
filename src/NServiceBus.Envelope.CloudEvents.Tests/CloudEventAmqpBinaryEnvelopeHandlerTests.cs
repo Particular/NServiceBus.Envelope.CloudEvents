@@ -230,28 +230,10 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
         });
     }
 
-    [Test]
-    public void Should_support_message_with_correct_headers()
-    {
-        var actual = EnvelopeHandler.CanUnwrapEnvelope(NativeMessageId, NativeHeaders!, new ContextBag(), Body);
-        Assert.That(actual, Is.True);
-    }
-
-    [Test]
-    [TestCase("cloudEvents:type")]
-    [TestCase("cloudEvents:id")]
-    [TestCase("cloudEvents:source")]
-    public void Should_not_support_message_with_missing_headers(string property)
-    {
-        NativeHeaders.Remove(property);
-        var actual = EnvelopeHandler.CanUnwrapEnvelope(NativeMessageId, NativeHeaders!, new ContextBag(), Body);
-        Assert.That(actual, Is.False);
-    }
-
     IncomingMessage RunEnvelopHandlerTest()
     {
         var upperCaseHeaders = NativeHeaders.ToDictionary(k => k.Key.ToUpper(), k => k.Value);
-        (Dictionary<string, string> convertedHeader, ReadOnlyMemory<byte> convertedBody) = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, upperCaseHeaders!, new ContextBag(), Body);
+        (Dictionary<string, string> convertedHeader, ReadOnlyMemory<byte> convertedBody) = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, upperCaseHeaders!, new ContextBag(), Body)!.Value;
         return new IncomingMessage(NativeMessageId, convertedHeader, convertedBody);
     }
 
