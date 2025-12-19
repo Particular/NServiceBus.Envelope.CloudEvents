@@ -28,9 +28,13 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
         string nativeMessageId, IDictionary<string, string> incomingHeaders,
         ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
     {
+        metrics.RecordUnwrappingAttempt(true, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
         var caseInsensitiveHeaders = ToCaseInsensitiveDictionary(incomingHeaders);
-        ThrowIfInvalidMessage(caseInsensitiveHeaders);
-        var headers = ExtractHeaders(caseInsensitiveHeaders);
+        if (!IsValidMessage(nativeMessageId, caseInsensitiveHeaders))
+        {
+            return null;
+        }
+        var headers = ExtractHeaders(nativeMessageId, caseInsensitiveHeaders);
         return (headers, incomingBody);
     }
 
@@ -39,22 +43,46 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
             .ToDictionary(p => p.Key, p => p.Value,
                 StringComparer.OrdinalIgnoreCase);
 
-    Dictionary<string, string> ExtractHeaders(IDictionary<string, string> existingHeaders)
+    Dictionary<string, string> ExtractHeaders(string nativeMessageId, IDictionary<string, string> existingHeaders)
     {
         var headersCopy = existingHeaders.ToDictionary(k => k.Key, k => k.Value);
 
         headersCopy[Headers.MessageId] = ExtractId(existingHeaders);
-        headersCopy[Headers.ReplyToAddress] = ExtractSource(existingHeaders);
-        headersCopy[Headers.EnclosedMessageTypes] = ExtractType(existingHeaders);
-        if (existingHeaders.TryGetValue(CloudEventAmqpBinaryConstants.TimeProperty, out var time))
+        if (Log.IsDebugEnabled)
         {
-            if (!string.IsNullOrEmpty(time) && time != CloudEventHttpBinaryEnvelopeHandlerConstants.NullLiteral)
-            {
-                /*
+            Log.Debug($"Extracted {headersCopy[Headers.MessageId]} for {CloudEventJsonStructuredConstants.IdProperty} field for messageId {nativeMessageId}");
+        }
+
+        headersCopy[Headers.ReplyToAddress] = ExtractSource(existingHeaders);
+        if (Log.IsDebugEnabled)
+        {
+            Log.Debug($"Extracted {headersCopy[Headers.ReplyToAddress]} for {CloudEventJsonStructuredConstants.SourceProperty} field for messageId {nativeMessageId}");
+        }
+
+        headersCopy[Headers.EnclosedMessageTypes] = ExtractType(existingHeaders);
+        if (Log.IsDebugEnabled)
+        {
+            Log.Debug($"Extracted {headersCopy[Headers.EnclosedMessageTypes]} for {CloudEventJsonStructuredConstants.TypeProperty} field for messageId {nativeMessageId}");
+        }
+
+        if (existingHeaders.TryGetValue(CloudEventAmqpBinaryConstants.TimeProperty, out var time)
+            && !string.IsNullOrEmpty(time) && time != CloudEventAmqpBinaryConstants.NullLiteral)
+        {
+            /*
                  * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
                  * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
                  */
-                headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time));
+            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time));
+            if (Log.IsDebugEnabled)
+            {
+                Log.Debug($"Extracted {headersCopy[Headers.TimeSent]} for {CloudEventJsonStructuredConstants.TimeProperty} field for messageId {nativeMessageId}");
+            }
+        }
+        else
+        {
+            if (Log.IsDebugEnabled)
+            {
+                Log.Debug($"No time extracted for messageId {nativeMessageId}");
             }
         }
 
@@ -75,13 +103,11 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
 
     static string ExtractHeader(IDictionary<string, string> existingHeaders, string property) => existingHeaders[property];
 
-    void ThrowIfInvalidMessage(IDictionary<string, string> headers)
+    bool IsValidMessage(string nativeMessageId, IDictionary<string, string> headers)
     {
-        if (!HasRequiredHeaders(headers))
+        if (!HasRequiredHeaders(nativeMessageId, headers))
         {
-            metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
-            throw new NotSupportedException(
-                $"Missing headers: {string.Join(",", CloudEventAmqpBinaryConstants.RequiredHeaders.Where(h => !headers.ContainsKey(h)))}");
+            return false;
         }
 
         metrics.RecordValidMessage(true, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
@@ -90,29 +116,54 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
         {
             if (version != CloudEventAmqpBinaryConstants.SupportedVersion)
             {
-                metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, version);
-
                 if (Log.IsWarnEnabled)
                 {
-                    Log.WarnFormat("Unexpected CloudEvent version property value {0} for message {1}",
-                        version, headers[CloudEventAmqpBinaryConstants.IdProperty]);
+                    Log.Warn($"Unexpected CloudEvent version property value {version} for message {nativeMessageId}");
                 }
+                metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, version);
             }
             else
             {
-                metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, CloudEventAmqpBinaryConstants.SupportedVersion);
+                if (Log.IsDebugEnabled)
+                {
+                    Log.Debug($"Correct version field  for message {nativeMessageId}");
+                }
+                metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY,
+                    CloudEventAmqpBinaryConstants.SupportedVersion);
             }
         }
         else
         {
-            metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, null);
-
             if (Log.IsWarnEnabled)
             {
-                Log.WarnFormat("CloudEvent version property is missing for message id {0}", headers[CloudEventAmqpBinaryConstants.IdProperty]);
+                Log.Warn($"CloudEvent version property is missing for message id {nativeMessageId}");
             }
+            metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, null);
         }
+
+        return true;
     }
 
-    static bool HasRequiredHeaders(IDictionary<string, string> incomingHeaders) => CloudEventAmqpBinaryConstants.RequiredHeaders.All(incomingHeaders.ContainsKey);
+    static bool HasRequiredHeaders(string nativeMessageId, IDictionary<string, string> incomingHeaders)
+    {
+        foreach (var header in CloudEventAmqpBinaryConstants.RequiredHeaders)
+        {
+            if (!incomingHeaders.ContainsKey(header))
+            {
+                if (Log.IsDebugEnabled)
+                {
+                    Log.Debug($"Message {nativeMessageId} has no property {nativeMessageId}");
+                }
+
+                return false;
+            }
+        }
+
+        if (Log.IsDebugEnabled)
+        {
+            Log.Debug($"Message {nativeMessageId} has all required properties");
+        }
+
+        return true;
+    }
 }

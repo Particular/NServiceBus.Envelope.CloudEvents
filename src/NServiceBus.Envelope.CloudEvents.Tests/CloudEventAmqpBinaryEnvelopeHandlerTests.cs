@@ -9,7 +9,6 @@ using Extensibility;
 using Fakes;
 using NServiceBus;
 using NUnit.Framework;
-using Transport;
 
 [TestFixture]
 class CloudEventAmqpBinaryEnvelopeHandlerTests
@@ -22,6 +21,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     internal required CloudEventAmqpBinaryEnvelopeHandler EnvelopeHandler;
     internal required MetricCollector<long> InvalidMessageCounter;
     internal required MetricCollector<long> UnexpectedVersionCounter;
+    internal required MetricCollector<long> AttemptCounter;
     internal required ReadOnlyMemory<byte> Body;
 
     class MyEvent
@@ -55,6 +55,9 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
         TestEndpointName = "testEndpointName";
         MeterFactory = new();
 
+        AttemptCounter = new MetricCollector<long>(MeterFactory, "NServiceBus.Envelope.CloudEvents",
+            "nservicebus.envelope.cloud_events.received.unwrapping_attempt");
+
         InvalidMessageCounter = new MetricCollector<long>(MeterFactory, "NServiceBus.Envelope.CloudEvents",
             "nservicebus.envelope.cloud_events.received.invalid_message");
 
@@ -67,7 +70,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     [Test]
     public void Should_unmarshal_regular_message()
     {
-        IncomingMessage actual = RunEnvelopHandlerTest();
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
 
         Assert.Multiple(() =>
         {
@@ -81,7 +84,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     {
         NativeHeaders.Remove("time");
 
-        IncomingMessage actual = RunEnvelopHandlerTest();
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
 
         AssertTypicalFields(actual, shouldHaveTime: false);
     }
@@ -91,7 +94,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     {
         NativeHeaders["time"] = "";
 
-        IncomingMessage actual = RunEnvelopHandlerTest();
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
 
         AssertTypicalFields(actual, shouldHaveTime: false);
     }
@@ -101,7 +104,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     {
         NativeHeaders["time"] = null;
 
-        IncomingMessage actual = RunEnvelopHandlerTest();
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
 
         AssertTypicalFields(actual, shouldHaveTime: false);
     }
@@ -111,7 +114,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     {
         NativeHeaders["time"] = "null";
 
-        IncomingMessage actual = RunEnvelopHandlerTest();
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
 
         AssertTypicalFields(actual, shouldHaveTime: false);
     }
@@ -119,7 +122,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     [Test]
     public void Should_report_metric_when_unmarshaling_regular_message()
     {
-        IncomingMessage actual = RunEnvelopHandlerTest();
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
 
         var invalidMessageCounterSnapshot = InvalidMessageCounter.GetMeasurementSnapshot();
 
@@ -136,7 +139,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     [Test]
     public void Should_report_metric_when_unmarshaling_message_with_version()
     {
-        IncomingMessage actual = RunEnvelopHandlerTest();
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
 
         var unexpectedVersionCounterSnapshot = UnexpectedVersionCounter.GetMeasurementSnapshot();
 
@@ -156,7 +159,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     public void Should_report_metric_when_unmarshaling_message_without_version()
     {
         NativeHeaders.Remove("cloudEvents:specversion");
-        IncomingMessage actual = RunEnvelopHandlerTest();
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
 
         var unexpectedVersionCounterSnapshot = UnexpectedVersionCounter.GetMeasurementSnapshot();
 
@@ -176,7 +179,7 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     public void Should_report_metric_when_unmarshaling_message_with_unrecognized_version()
     {
         NativeHeaders["cloudEvents:specversion"] = "wrong";
-        IncomingMessage actual = RunEnvelopHandlerTest();
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
 
         var unexpectedVersionCounterSnapshot = UnexpectedVersionCounter.GetMeasurementSnapshot();
 
@@ -196,53 +199,40 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     [TestCase("cloudEvents:type")]
     [TestCase("cloudEvents:id")]
     [TestCase("cloudEvents:source")]
-    public void Should_throw_when_property_is_missing(string property)
+    public void Should_return_null_when_property_is_missing(string property)
     {
-        Assert.Throws<NotSupportedException>(() =>
-        {
-            NativeHeaders.Remove(property);
-            RunEnvelopHandlerTest();
-        });
+        NativeHeaders.Remove(property);
+
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body)? actual = RunEnvelopHandlerTest();
+
+        Assert.That(actual, Is.Null);
     }
 
     [Test]
     [TestCase("cloudEvents:type")]
     [TestCase("cloudEvents:id")]
     [TestCase("cloudEvents:source")]
-    public void Should_record_metric_when_property_is_missing(string property)
+    public void Should_not_record_metric_when_property_is_missing(string property)
     {
-        try
-        {
-            NativeHeaders.Remove(property);
-            RunEnvelopHandlerTest();
-        }
-        catch { }
+        NativeHeaders.Remove(property);
+        RunEnvelopHandlerTest();
 
         var invalidMessageCounterSnapshot = InvalidMessageCounter.GetMeasurementSnapshot();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(1));
-            Assert.That(invalidMessageCounterSnapshot[0].Value, Is.EqualTo(1));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(TestEndpointName));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
-                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY));
-        });
+        Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(0));
     }
 
-    IncomingMessage RunEnvelopHandlerTest()
+    (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? RunEnvelopHandlerTest()
     {
         var upperCaseHeaders = NativeHeaders.ToDictionary(k => k.Key.ToUpper(), k => k.Value);
-        (Dictionary<string, string> convertedHeader, ReadOnlyMemory<byte> convertedBody) = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, upperCaseHeaders!, new ContextBag(), Body)!.Value;
-        return new IncomingMessage(NativeMessageId, convertedHeader, convertedBody);
+        return EnvelopeHandler.UnwrapEnvelope(NativeMessageId, upperCaseHeaders!, new ContextBag(), Body);
     }
 
-    void AssertTypicalFields(IncomingMessage actual, bool shouldHaveTime = true)
+    void AssertTypicalFields((Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual, bool shouldHaveTime = true)
     {
+        var attemptCounterSnapshot = AttemptCounter.GetMeasurementSnapshot();
         Assert.Multiple(() =>
         {
-            Assert.That(actual.MessageId, Is.EqualTo(NativeMessageId));
-            Assert.That(actual.NativeMessageId, Is.EqualTo(NativeMessageId));
             Assert.That(actual.Headers[Headers.MessageId], Is.EqualTo(NativeMessageId));
             Assert.That(actual.Headers[Headers.ReplyToAddress], Is.EqualTo(NativeHeaders["cloudEvents:source"]));
             if (shouldHaveTime)
@@ -253,6 +243,12 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
             Assert.That(actual.Headers.ContainsKey("data"), Is.False);
             Assert.That(actual.Headers.ContainsKey("some_other_property"), Is.False);
             Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.CloudEventAmqpBinaryEnvelopeHandlerTests+MyEvent"));
+
+            Assert.That(attemptCounterSnapshot.Count, Is.EqualTo(1));
+            Assert.That(attemptCounterSnapshot[0].Value, Is.EqualTo(1));
+            Assert.That(attemptCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(TestEndpointName));
+            Assert.That(attemptCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
+                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY));
         });
     }
 }

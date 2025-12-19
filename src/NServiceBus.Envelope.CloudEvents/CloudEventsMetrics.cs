@@ -8,7 +8,8 @@ sealed class CloudEventsMetrics : IDisposable
 {
     internal static class CloudEventTypes
     {
-        internal static readonly string JSON_STRUCTURED = "JSON_structured";
+        internal static readonly string JSON_STRUCTURED_STRICT = "JSON_structured_strict";
+        internal static readonly string JSON_STRUCTURED_PERMISSIVE = "JSON_structured_permissive";
         internal static readonly string HTTP_BINARY = "HTTP_binary";
         internal static readonly string AMQP_BINARY = "AMQP_binary";
     }
@@ -26,6 +27,10 @@ sealed class CloudEventsMetrics : IDisposable
         unexpectedVersionCounter = meter.CreateCounter<long>(
             "nservicebus.envelope.cloud_events.received.unexpected_version",
             description: "Number of received messages with unrecognized version type.");
+
+        unwrappingAttemptCounter = meter.CreateCounter<long>(
+            "nservicebus.envelope.cloud_events.received.unwrapping_attempt",
+            description: "Total number of unwrapping attempts.");
     }
 
     public void RecordValidMessage(bool isValid, string envelopeType)
@@ -57,10 +62,25 @@ sealed class CloudEventsMetrics : IDisposable
         unexpectedVersionCounter.Add(isExpectedVersion ? 0 : 1, tags);
     }
 
+    public void RecordUnwrappingAttempt(bool attemptsToUnwrap, string envelopeType)
+    {
+        if (!unwrappingAttemptCounter.Enabled)
+        {
+            return;
+        }
+
+        TagList tags;
+        tags.Add("nservicebus.endpoint", endpointName);
+        tags.Add("nservicebus.envelope.cloud_events.received.envelope_type", envelopeType);
+
+        unwrappingAttemptCounter.Add(attemptsToUnwrap ? 1 : 0, tags);
+    }
+
     public void Dispose() => meter.Dispose();
 
     readonly Counter<long> invalidMessageCounter;
     readonly Counter<long> unexpectedVersionCounter;
+    readonly Counter<long> unwrappingAttemptCounter;
     readonly string endpointName;
     readonly Meter meter;
 }
