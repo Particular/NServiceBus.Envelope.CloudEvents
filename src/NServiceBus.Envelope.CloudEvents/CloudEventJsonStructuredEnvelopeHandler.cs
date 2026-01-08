@@ -199,44 +199,6 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
         return false;
     }
 
-    static bool ValidateJsonProperties(ReadOnlySpan<byte> jsonBytes, HashSet<string> requiredProperties, out bool hasData)
-    {
-        hasData = false;
-        var foundProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var reader = new Utf8JsonReader(jsonBytes);
-
-        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
-        {
-            return false;
-        }
-
-        while (reader.Read())
-        {
-            if (reader.TokenType == JsonTokenType.EndObject)
-            {
-                break;
-            }
-
-            if (reader.TokenType != JsonTokenType.PropertyName)
-            {
-                continue;
-            }
-
-            var propertyName = reader.GetString()!;
-            _ = foundProperties.Add(propertyName);
-
-            if (propertyName.Equals(CloudEventJsonStructuredConstants.DataProperty, StringComparison.OrdinalIgnoreCase) ||
-                propertyName.Equals(CloudEventJsonStructuredConstants.DataBase64Property, StringComparison.OrdinalIgnoreCase))
-            {
-                hasData = true;
-            }
-
-            reader.Skip();
-        }
-
-        return requiredProperties.All(prop => foundProperties.Contains(prop));
-    }
-
     static Dictionary<string, JsonElement>? ParseJsonUsingReader(ReadOnlySpan<byte> jsonBytes)
     {
         var reader = new Utf8JsonReader(jsonBytes);
@@ -270,14 +232,73 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
         return properties;
     }
 
+    static Dictionary<string, JsonElement>? ParseAndValidateStrict(ReadOnlySpan<byte> jsonBytes, out bool hasData, out bool isValid)
+    {
+        hasData = false;
+        isValid = false;
+
+        var reader = new Utf8JsonReader(jsonBytes);
+
+        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
+        {
+            return null;
+        }
+
+        // Pre-allocate for typical CloudEvent size (7-10 properties)
+        var properties = new Dictionary<string, JsonElement>(8, StringComparer.OrdinalIgnoreCase);
+
+        // Use bit flags to track required properties: id=1, source=2, type=4
+        var foundRequired = 0;
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndObject)
+            {
+                break;
+            }
+
+            if (reader.TokenType != JsonTokenType.PropertyName)
+            {
+                continue;
+            }
+
+            var propertyName = reader.GetString()!;
+
+            // Track required properties as we encounter them
+            if (propertyName.Equals(CloudEventJsonStructuredConstants.IdProperty, StringComparison.OrdinalIgnoreCase))
+            {
+                foundRequired |= 1;
+            }
+            else if (propertyName.Equals(CloudEventJsonStructuredConstants.SourceProperty, StringComparison.OrdinalIgnoreCase))
+            {
+                foundRequired |= 2;
+            }
+            else if (propertyName.Equals(CloudEventJsonStructuredConstants.TypeProperty, StringComparison.OrdinalIgnoreCase))
+            {
+                foundRequired |= 4;
+            }
+
+            // Check for data properties
+            var normalizedKey = propertyName.ToLowerInvariant();
+            if (normalizedKey is CloudEventJsonStructuredConstants.DataProperty or CloudEventJsonStructuredConstants.DataBase64Property)
+            {
+                hasData = true;
+            }
+
+            // Parse the value
+            _ = reader.Read();
+            var element = JsonElement.ParseValue(ref reader);
+            properties[propertyName] = element;
+        }
+
+        // Check if all required properties were found (id=1, source=2, type=4 => total=7)
+        isValid = foundRequired == 7;
+
+        return properties;
+    }
+
     static class StrictHandler
     {
-        static readonly string[] RequiredProperties = [
-            CloudEventJsonStructuredConstants.IdProperty,
-            CloudEventJsonStructuredConstants.SourceProperty,
-            CloudEventJsonStructuredConstants.TypeProperty
-        ];
-
         internal static Dictionary<string, JsonElement>? DeserializeOrThrow(string nativeMessageId,
             IDictionary<string, string> incomingHeaders,
             ReadOnlyMemory<byte> body, CloudEventsMetrics metrics)
@@ -298,14 +319,14 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             }
             metrics.RecordUnwrappingAttempt(true, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
 
-            // Check early on if the required properties exist before allocating the dictionary with values
-            HashSet<string> requiredPropertiesSet = [.. RequiredProperties];
-            bool isValid;
+            // Single-pass parsing and validation
+            Dictionary<string, JsonElement>? receivedCloudEvent;
             bool hasData;
+            bool isValid;
 
             try
             {
-                isValid = ValidateJsonProperties(body.Span, requiredPropertiesSet, out hasData);
+                receivedCloudEvent = ParseAndValidateStrict(body.Span, out hasData, out isValid);
             }
             catch (Exception e)
             {
@@ -317,9 +338,19 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
                 throw;
             }
 
+            if (receivedCloudEvent == null)
+            {
+                var message = $"Couldn't deserialize body of the message {nativeMessageId}";
+                if (Log.IsWarnEnabled)
+                {
+                    Log.Warn(message);
+                }
+                metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
+                throw new NotSupportedException(message);
+            }
+
             if (!isValid)
             {
-                // TODO: Log the missing properties?
                 var message = $"Message {nativeMessageId} is missing one or more required properties";
                 if (Log.IsWarnEnabled)
                 {
@@ -332,32 +363,6 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             if (!hasData)
             {
                 var message = $"Message {nativeMessageId} lacks both {CloudEventJsonStructuredConstants.DataProperty} and {CloudEventJsonStructuredConstants.DataBase64Property} property";
-                if (Log.IsWarnEnabled)
-                {
-                    Log.Warn(message);
-                }
-                metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
-                throw new NotSupportedException(message);
-            }
-
-            Dictionary<string, JsonElement>? receivedCloudEvent;
-            try
-            {
-                receivedCloudEvent = ParseJsonUsingReader(body.Span);
-            }
-            catch (Exception e)
-            {
-                if (Log.IsWarnEnabled)
-                {
-                    Log.Warn($"Couldn't deserialize body of the message {nativeMessageId}: {e}");
-                }
-                metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
-                throw;
-            }
-
-            if (receivedCloudEvent == null)
-            {
-                var message = $"Couldn't deserialize body of the message {nativeMessageId}";
                 if (Log.IsWarnEnabled)
                 {
                     Log.Warn(message);
