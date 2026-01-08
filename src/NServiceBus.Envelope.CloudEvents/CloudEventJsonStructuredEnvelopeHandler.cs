@@ -199,108 +199,6 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
         return false;
     }
 
-    static Dictionary<string, JsonElement>? ParseAndValidatePermissive(ReadOnlySpan<byte> jsonBytes)
-    {
-        var reader = new Utf8JsonReader(jsonBytes);
-
-        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
-        {
-            return null;
-        }
-
-        bool hasTypeProperty = false;
-        // 8 properties on average per CloudEvent?
-        var properties = new Dictionary<string, JsonElement>(8, StringComparer.OrdinalIgnoreCase);
-
-        while (reader.Read())
-        {
-            if (reader.TokenType == JsonTokenType.EndObject)
-            {
-                break;
-            }
-
-            if (reader.TokenType != JsonTokenType.PropertyName)
-            {
-                continue;
-            }
-
-            var propertyName = reader.GetString()!;
-            if (propertyName.Equals(CloudEventJsonStructuredConstants.TypeProperty, StringComparison.OrdinalIgnoreCase))
-            {
-                hasTypeProperty = true;
-            }
-
-            _ = reader.Read();
-            var element = JsonElement.ParseValue(ref reader);
-            properties[propertyName] = element;
-        }
-
-        return hasTypeProperty ? properties : null;
-    }
-
-    static Dictionary<string, JsonElement>? ParseAndValidateStrict(ReadOnlySpan<byte> jsonBytes, out bool hasData, out bool isValid)
-    {
-        hasData = false;
-        isValid = false;
-
-        var reader = new Utf8JsonReader(jsonBytes);
-
-        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
-        {
-            return null;
-        }
-
-        // Pre-allocate for typical CloudEvent size (7-10 properties)
-        var properties = new Dictionary<string, JsonElement>(8, StringComparer.OrdinalIgnoreCase);
-
-        // Use bit flags to track required properties: id=1, source=2, type=4
-        var foundRequired = 0;
-
-        while (reader.Read())
-        {
-            if (reader.TokenType == JsonTokenType.EndObject)
-            {
-                break;
-            }
-
-            if (reader.TokenType != JsonTokenType.PropertyName)
-            {
-                continue;
-            }
-
-            var propertyName = reader.GetString()!;
-
-            // Track required properties as we encounter them
-            if (propertyName.Equals(CloudEventJsonStructuredConstants.IdProperty, StringComparison.OrdinalIgnoreCase))
-            {
-                foundRequired |= 1;
-            }
-            else if (propertyName.Equals(CloudEventJsonStructuredConstants.SourceProperty, StringComparison.OrdinalIgnoreCase))
-            {
-                foundRequired |= 2;
-            }
-            else if (propertyName.Equals(CloudEventJsonStructuredConstants.TypeProperty, StringComparison.OrdinalIgnoreCase))
-            {
-                foundRequired |= 4;
-            }
-
-            if (propertyName.Equals(CloudEventJsonStructuredConstants.DataProperty, StringComparison.OrdinalIgnoreCase) ||propertyName.Equals(CloudEventJsonStructuredConstants.DataBase64Property, StringComparison.OrdinalIgnoreCase))
-            {
-                hasData = true;
-            }
-
-            // Parse the value
-            _ = reader.Read();
-            var element = JsonElement.ParseValue(ref reader);
-            properties[propertyName] = element;
-        }
-
-        // Check if all required properties were found (id=1, source=2, type=4 => total=7)
-        isValid = foundRequired == 7;
-
-        return properties;
-    }
-
     static class StrictHandler
     {
         internal static Dictionary<string, JsonElement>? DeserializeOrThrow(string nativeMessageId,
@@ -329,7 +227,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
             try
             {
-                receivedCloudEvent = ParseAndValidateStrict(body.Span, out hasData, out isValid);
+                receivedCloudEvent = ParseAndValidate(body.Span, out hasData, out isValid);
             }
             catch (Exception e)
             {
@@ -381,6 +279,69 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
             RecordMetricsForValidMessage(nativeMessageId, receivedCloudEvent, metrics);
             return receivedCloudEvent;
+        }
+
+        static Dictionary<string, JsonElement>? ParseAndValidate(ReadOnlySpan<byte> jsonBytes, out bool hasData, out bool isValid)
+        {
+            hasData = false;
+            isValid = false;
+
+            var reader = new Utf8JsonReader(jsonBytes);
+
+            if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
+            {
+                return null;
+            }
+
+            // Pre-allocate for typical CloudEvent size (7-10 properties)
+            var properties = new Dictionary<string, JsonElement>(8, StringComparer.OrdinalIgnoreCase);
+
+            // Use bit flags to track required properties: id=1, source=2, type=4
+            var foundRequired = 0;
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndObject)
+                {
+                    break;
+                }
+
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                {
+                    continue;
+                }
+
+                var propertyName = reader.GetString()!;
+
+                // Track required properties as we encounter them
+                if (propertyName.Equals(CloudEventJsonStructuredConstants.IdProperty, StringComparison.OrdinalIgnoreCase))
+                {
+                    foundRequired |= 1;
+                }
+                else if (propertyName.Equals(CloudEventJsonStructuredConstants.SourceProperty, StringComparison.OrdinalIgnoreCase))
+                {
+                    foundRequired |= 2;
+                }
+                else if (propertyName.Equals(CloudEventJsonStructuredConstants.TypeProperty, StringComparison.OrdinalIgnoreCase))
+                {
+                    foundRequired |= 4;
+                }
+
+                if (propertyName.Equals(CloudEventJsonStructuredConstants.DataProperty, StringComparison.OrdinalIgnoreCase) || propertyName.Equals(CloudEventJsonStructuredConstants.DataBase64Property, StringComparison.OrdinalIgnoreCase))
+                {
+                    hasData = true;
+                }
+
+                // Parse the value
+                _ = reader.Read();
+                var element = JsonElement.ParseValue(ref reader);
+                properties[propertyName] = element;
+            }
+
+            // Check if all required properties were found (id=1, source=2, type=4 => total=7)
+            isValid = foundRequired == 7;
+
+            return properties;
         }
 
         static bool HasCorrectContentTypeHeader(IDictionary<string, string> incomingHeaders) =>
@@ -435,7 +396,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
             try
             {
-                receivedCloudEvent = ParseAndValidatePermissive(body.Span);
+                receivedCloudEvent = ParseAndValidate(body.Span);
             }
             catch (Exception e)
             {
@@ -458,6 +419,45 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             RecordMetrics(nativeMessageId, receivedCloudEvent, metrics);
 
             return receivedCloudEvent;
+        }
+        
+        static Dictionary<string, JsonElement>? ParseAndValidate(ReadOnlySpan<byte> jsonBytes)
+        {
+            var reader = new Utf8JsonReader(jsonBytes);
+
+            if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
+            {
+                return null;
+            }
+
+            bool hasTypeProperty = false;
+            // 8 properties on average per CloudEvent?
+            var properties = new Dictionary<string, JsonElement>(8, StringComparer.OrdinalIgnoreCase);
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndObject)
+                {
+                    break;
+                }
+
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                {
+                    continue;
+                }
+
+                var propertyName = reader.GetString()!;
+                if (propertyName.Equals(CloudEventJsonStructuredConstants.TypeProperty, StringComparison.OrdinalIgnoreCase))
+                {
+                    hasTypeProperty = true;
+                }
+
+                _ = reader.Read();
+                var element = JsonElement.ParseValue(ref reader);
+                properties[propertyName] = element;
+            }
+
+            return hasTypeProperty ? properties : null;
         }
 
         static void RecordMetrics(string nativeMessageId, Dictionary<string, JsonElement> receivedCloudEvent,
