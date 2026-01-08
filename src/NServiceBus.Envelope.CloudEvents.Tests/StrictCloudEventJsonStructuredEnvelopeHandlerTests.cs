@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.Envelope.CloudEvents.Tests;
+namespace NServiceBus.Envelope.CloudEvents.Tests;
 
 using System;
 using System.Collections.Generic;
@@ -421,7 +421,7 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
     [Test]
     public void Should_throw_for_invalid_body()
     {
-        Assert.Throws<JsonException>(() =>
+        Assert.Throws(Is.InstanceOf<JsonException>(), () =>
         {
             EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), new ReadOnlyMemory<byte>());
         });
