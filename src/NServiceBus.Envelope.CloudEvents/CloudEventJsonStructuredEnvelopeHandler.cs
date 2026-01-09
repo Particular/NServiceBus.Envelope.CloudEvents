@@ -420,7 +420,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
             return receivedCloudEvent;
         }
-        
+
         static Dictionary<string, JsonElement>? ParseAndValidate(ReadOnlySpan<byte> jsonBytes)
         {
             var reader = new Utf8JsonReader(jsonBytes);
