@@ -21,8 +21,6 @@ static class CloudEventJsonStructuredConstants
     internal const string SupportedContentType = "application/cloudevents+json";
     internal const string JsonContentType = "application/json";
     internal const string NullLiteral = "null";
-
-    internal static readonly HashSet<string> HeadersToIgnore = [DataProperty, DataBase64Property];
 }
 
 class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudEventsConfiguration config) : IEnvelopeHandler
@@ -49,16 +47,17 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
         foreach (var kvp in receivedCloudEvent)
         {
-            var normalizedKey = kvp.Key.ToLowerInvariant();
-            if (
-                CloudEventJsonStructuredConstants.HeadersToIgnore.Contains(normalizedKey)
-                || kvp.Value.ValueKind == JsonValueKind.Undefined
+            // Check for ignored headers using case-insensitive comparison - avoids allocation
+            if (kvp.Value.ValueKind == JsonValueKind.Undefined
                 || kvp.Value.ValueKind == JsonValueKind.Null
-            )
+                || kvp.Key.Equals(CloudEventJsonStructuredConstants.DataProperty, StringComparison.OrdinalIgnoreCase)
+                || kvp.Key.Equals(CloudEventJsonStructuredConstants.DataBase64Property, StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
+            // Only allocate lowercase string when we need to store it
+            var normalizedKey = kvp.Key.ToLowerInvariant();
             headersCopy[normalizedKey] = kvp.Value.ValueKind == JsonValueKind.String
                 ? kvp.Value.GetString()!
                 : kvp.Value.GetRawText();
