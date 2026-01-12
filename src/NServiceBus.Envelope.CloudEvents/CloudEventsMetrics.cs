@@ -33,7 +33,7 @@ sealed class CloudEventsMetrics : IDisposable
             description: "Total number of unwrapping attempts.");
     }
 
-    public void RecordValidMessage(bool isValid, string envelopeType)
+    public void RecordValidMessage(string envelopeType)
     {
         if (!invalidMessageCounter.Enabled)
         {
@@ -44,10 +44,24 @@ sealed class CloudEventsMetrics : IDisposable
         tags.Add("nservicebus.endpoint", endpointName);
         tags.Add("nservicebus.envelope.cloud_events.received.envelope_type", envelopeType);
 
-        invalidMessageCounter.Add(isValid ? 0 : 1, tags);
+        invalidMessageCounter.Add(0, tags);
     }
 
-    public void RecordUnexpectedVersion(bool isExpectedVersion, string envelopeType, string? version)
+    public void RecordInvalidMessage(string envelopeType)
+    {
+        if (!invalidMessageCounter.Enabled)
+        {
+            return;
+        }
+
+        TagList tags;
+        tags.Add("nservicebus.endpoint", endpointName);
+        tags.Add("nservicebus.envelope.cloud_events.received.envelope_type", envelopeType);
+
+        invalidMessageCounter.Add(1, tags);
+    }
+
+    public void RecordUnexpectedVersion(string envelopeType, string? version)
     {
         if (!unexpectedVersionCounter.Enabled)
         {
@@ -59,10 +73,25 @@ sealed class CloudEventsMetrics : IDisposable
         tags.Add("nservicebus.envelope.cloud_events.received.envelope_type", envelopeType);
         tags.Add("nservicebus.envelope.cloud_events.received.version", version);
 
-        unexpectedVersionCounter.Add(isExpectedVersion ? 0 : 1, tags);
+        unexpectedVersionCounter.Add(1, tags);
     }
 
-    public void RecordUnwrappingAttempt(bool attemptsToUnwrap, string envelopeType)
+    public void RecordExpectedVersion(string envelopeType, string? version)
+    {
+        if (!unexpectedVersionCounter.Enabled)
+        {
+            return;
+        }
+
+        TagList tags;
+        tags.Add("nservicebus.endpoint", endpointName);
+        tags.Add("nservicebus.envelope.cloud_events.received.envelope_type", envelopeType);
+        tags.Add("nservicebus.envelope.cloud_events.received.version", version);
+
+        unexpectedVersionCounter.Add(0, tags);
+    }
+
+    public void RecordAttemptingToUnwrap(string envelopeType)
     {
         if (!unwrappingAttemptCounter.Enabled)
         {
@@ -73,7 +102,21 @@ sealed class CloudEventsMetrics : IDisposable
         tags.Add("nservicebus.endpoint", endpointName);
         tags.Add("nservicebus.envelope.cloud_events.received.envelope_type", envelopeType);
 
-        unwrappingAttemptCounter.Add(attemptsToUnwrap ? 1 : 0, tags);
+        unwrappingAttemptCounter.Add(1, tags);
+    }
+
+    public void RecordNotAttemptingToUnwrap(string envelopeType)
+    {
+        if (!unwrappingAttemptCounter.Enabled)
+        {
+            return;
+        }
+
+        TagList tags;
+        tags.Add("nservicebus.endpoint", endpointName);
+        tags.Add("nservicebus.envelope.cloud_events.received.envelope_type", envelopeType);
+
+        unwrappingAttemptCounter.Add(0, tags);
     }
 
     public void Dispose() => meter.Dispose();

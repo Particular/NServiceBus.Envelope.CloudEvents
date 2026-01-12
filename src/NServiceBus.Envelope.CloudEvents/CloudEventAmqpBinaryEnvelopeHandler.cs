@@ -28,7 +28,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
         string nativeMessageId, IDictionary<string, string> incomingHeaders,
         ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
     {
-        metrics.RecordUnwrappingAttempt(true, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
+        metrics.RecordAttemptingToUnwrap(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
         var caseInsensitiveHeaders = ToCaseInsensitiveDictionary(incomingHeaders);
         if (!IsValidMessage(nativeMessageId, caseInsensitiveHeaders))
         {
@@ -110,7 +110,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
             return false;
         }
 
-        metrics.RecordValidMessage(true, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
+        metrics.RecordValidMessage(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
 
         if (headers.TryGetValue(CloudEventAmqpBinaryConstants.VersionProperty, out var version))
         {
@@ -120,7 +120,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
                 {
                     Log.WarnFormat("Unexpected CloudEvent version property value {0} for message {1}", version, nativeMessageId);
                 }
-                metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, version);
+                metrics.RecordUnexpectedVersion(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, version);
             }
             else
             {
@@ -128,7 +128,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
                 {
                     Log.DebugFormat("Correct version field  for message {0}", nativeMessageId);
                 }
-                metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY,
+                metrics.RecordExpectedVersion(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY,
                     CloudEventAmqpBinaryConstants.SupportedVersion);
             }
         }
@@ -138,7 +138,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
             {
                 Log.WarnFormat("CloudEvent version property is missing for message id {0}", nativeMessageId);
             }
-            metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, null);
+            metrics.RecordUnexpectedVersion(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, null);
         }
 
         return true;
