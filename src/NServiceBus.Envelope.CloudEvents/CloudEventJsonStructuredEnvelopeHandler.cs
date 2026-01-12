@@ -65,7 +65,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Extracted {headersCopy[kvp.Key]} for {kvp.Key} field for messageId {nativeMessageId}");
+                Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[kvp.Key], kvp.Key, nativeMessageId);
             }
         }
 
@@ -74,7 +74,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             headersCopy[Headers.MessageId] = id;
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Extracted {headersCopy[Headers.MessageId]} for {CloudEventJsonStructuredConstants.IdProperty} field for messageId {nativeMessageId}");
+                Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.MessageId], CloudEventJsonStructuredConstants.IdProperty, nativeMessageId);
             }
         }
 
@@ -83,14 +83,14 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             headersCopy[Headers.ReplyToAddress] = source;
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Extracted {headersCopy[Headers.ReplyToAddress]} for {CloudEventJsonStructuredConstants.SourceProperty} field for messageId {nativeMessageId}");
+                Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.ReplyToAddress], CloudEventJsonStructuredConstants.SourceProperty, nativeMessageId);
             }
         }
 
         headersCopy[Headers.EnclosedMessageTypes] = ExtractType(receivedCloudEvent);
         if (Log.IsDebugEnabled)
         {
-            Log.Debug($"Extracted {headersCopy[Headers.EnclosedMessageTypes]} for {CloudEventJsonStructuredConstants.TypeProperty} field for messageId {nativeMessageId}");
+            Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.EnclosedMessageTypes], CloudEventJsonStructuredConstants.TypeProperty, nativeMessageId);
         }
 
         if (TryGetHeader(receivedCloudEvent, CloudEventJsonStructuredConstants.TimeProperty, out var timeValue)
@@ -103,14 +103,14 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(timeValue));
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Extracted {headersCopy[Headers.TimeSent]} for {CloudEventJsonStructuredConstants.TimeProperty} field for messageId {nativeMessageId}");
+                Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.TimeSent], CloudEventJsonStructuredConstants.TimeProperty, nativeMessageId);
             }
         }
         else
         {
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"No time extracted for messageId {nativeMessageId}");
+                Log.DebugFormat("No time extracted for messageId {0}", nativeMessageId);
             }
         }
 
@@ -124,7 +124,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
         }
         if (Log.IsDebugEnabled)
         {
-            Log.Debug($"Extracted {headersCopy[Headers.ContentType]} for {CloudEventJsonStructuredConstants.DataContentTypeProperty} field for messageId {nativeMessageId}");
+            Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.ContentType], CloudEventJsonStructuredConstants.DataContentTypeProperty, nativeMessageId);
         }
 
         return headersCopy;
@@ -144,7 +144,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
         {
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Extracting inner body from {CloudEventJsonStructuredConstants.DataBase64Property} for message {nativeMessageId}");
+                Log.DebugFormat("Extracting inner body from {0} for message {1}", CloudEventJsonStructuredConstants.DataBase64Property, nativeMessageId);
             }
             return new ReadOnlyMemory<byte>(Convert.FromBase64String(base64Body));
         }
@@ -153,7 +153,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
         {
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Extracting inner body from {CloudEventJsonStructuredConstants.DataProperty} for message {nativeMessageId}");
+                Log.DebugFormat("Extracting inner body from {0} for message {1}", CloudEventJsonStructuredConstants.DataProperty, nativeMessageId);
             }
 
             if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.DataContentTypeProperty,
@@ -161,7 +161,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 if (Log.IsDebugEnabled)
                 {
-                    Log.Debug($"Passing inner body as text for message {nativeMessageId}");
+                    Log.DebugFormat("Passing inner body as text for message {0}", nativeMessageId);
                 }
                 return new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(
                     data.Value.GetString()!));
@@ -169,7 +169,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Passing inner body as JSON for message {nativeMessageId}");
+                Log.DebugFormat("Passing inner body as JSON for message {0}", nativeMessageId);
             }
             if (data.Value.ValueKind is not JsonValueKind.Undefined and not JsonValueKind.Null)
             {
@@ -180,7 +180,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
         if (Log.IsDebugEnabled)
         {
-            Log.Debug($"Empty inner body for message {nativeMessageId}");
+            Log.DebugFormat("Empty inner body for message {0}", nativeMessageId);
         }
         return new ReadOnlyMemory<byte>();
     }
@@ -220,7 +220,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 if (Log.IsDebugEnabled)
                 {
-                    Log.Debug($"Message {nativeMessageId} has incorrect CloudEvents JSON Structured Content-Type header and won't be unwrapped");
+                    Log.DebugFormat("Message {0} has incorrect CloudEvents JSON Structured Content-Type header and won't be unwrapped", nativeMessageId);
                 }
                 metrics.RecordUnwrappingAttempt(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
                 return null;
@@ -228,7 +228,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Message {nativeMessageId} has correct CloudEvents JSON Structured Content-Type header and will be unwrapped");
+                Log.DebugFormat("Message {0} has correct CloudEvents JSON Structured Content-Type header and will be unwrapped", nativeMessageId);
             }
             metrics.RecordUnwrappingAttempt(true, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
 
@@ -241,7 +241,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 if (Log.IsWarnEnabled)
                 {
-                    Log.Warn($"Couldn't deserialize body of the message {nativeMessageId}: {e}");
+                    Log.WarnFormat("Couldn't deserialize body of the message {0}: {1}", nativeMessageId, e);
                 }
                 metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
                 throw;
@@ -251,7 +251,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 if (Log.IsWarnEnabled)
                 {
-                    Log.Warn($"Deserialized unexpected body of the message {nativeMessageId}");
+                    Log.WarnFormat("Deserialized unexpected body of the message {0}", nativeMessageId);
                 }
                 metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
                 throw new NotSupportedException("Couldn't deserialize the message into a cloud event");
@@ -259,7 +259,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Message {nativeMessageId} has been deserialized correctly");
+                Log.DebugFormat("Message {0} has been deserialized correctly", nativeMessageId);
             }
 
             Dictionary<string, JsonProperty> caseInsensitiveProperties = ToCaseInsensitiveDictionary(receivedCloudEvent);
@@ -280,7 +280,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
                 {
                     if (Log.IsWarnEnabled)
                     {
-                        Log.Warn($"Message {nativeMessageId} lacks required {property} property");
+                        Log.WarnFormat("Message {0} lacks required {1} property", nativeMessageId, property);
                     }
                     metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
                     throw new NotSupportedException($"Message {nativeMessageId} lacks {property} property");
@@ -292,7 +292,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 if (Log.IsWarnEnabled)
                 {
-                    Log.Warn($"Message {nativeMessageId} lacks both {CloudEventJsonStructuredConstants.DataProperty} and {CloudEventJsonStructuredConstants.DataBase64Property} property");
+                    Log.WarnFormat("Message {0} lacks both {1} and {2} property", nativeMessageId, CloudEventJsonStructuredConstants.DataProperty, CloudEventJsonStructuredConstants.DataBase64Property);
                 }
                 metrics.RecordValidMessage(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
                 throw new NotSupportedException($"Message {nativeMessageId} lacks both {CloudEventJsonStructuredConstants.DataProperty} and {CloudEventJsonStructuredConstants.DataBase64Property} property");
@@ -300,7 +300,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Message {nativeMessageId} has all the required fields");
+                Log.DebugFormat("Message {0} has all the required fields", nativeMessageId);
             }
             metrics.RecordValidMessage(true, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
 
@@ -312,7 +312,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
                 {
                     if (Log.IsWarnEnabled)
                     {
-                        Log.Warn($"Unexpected CloudEvent version property value {versionValue} for message {nativeMessageId}");
+                        Log.WarnFormat("Unexpected CloudEvent version property value {0} for message {1}", versionValue, nativeMessageId);
                     }
                     metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT, versionValue);
                 }
@@ -320,7 +320,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
                 {
                     if (Log.IsDebugEnabled)
                     {
-                        Log.Debug($"Message {nativeMessageId} has correct version field");
+                        Log.DebugFormat("Message {0} has correct version field", nativeMessageId);
                     }
                     metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT, CloudEventJsonStructuredConstants.SupportedVersion);
                 }
@@ -329,7 +329,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 if (Log.IsWarnEnabled)
                 {
-                    Log.Warn($"CloudEvent version property is missing for message id {nativeMessageId}");
+                    Log.WarnFormat("CloudEvent version property is missing for message id {0}", nativeMessageId);
                 }
                 metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT, null);
             }
@@ -352,7 +352,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 if (Log.IsDebugEnabled)
                 {
-                    Log.Debug($"Couldn't deserialize body of the message {nativeMessageId}: {e}");
+                    Log.DebugFormat("Couldn't deserialize body of the message {0}: {1}", nativeMessageId, e);
                 }
 
                 return null;
@@ -362,7 +362,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 if (Log.IsDebugEnabled)
                 {
-                    Log.Debug($"Deserialized unexpected body of the message {nativeMessageId}");
+                    Log.DebugFormat("Deserialized unexpected body of the message {0}", nativeMessageId);
                 }
                 return null;
             }
@@ -373,7 +373,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 if (Log.IsDebugEnabled)
                 {
-                    Log.Debug($"No data field for the message {nativeMessageId}");
+                    Log.DebugFormat("No data field for the message {0}", nativeMessageId);
                 }
                 return null;
             }
@@ -388,7 +388,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
         {
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Received correct payload for the message {nativeMessageId}");
+                Log.DebugFormat("Received correct payload for the message {0}", nativeMessageId);
             }
             metrics.RecordValidMessage(true, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE);
 
@@ -411,7 +411,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
                     metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE, CloudEventJsonStructuredConstants.SupportedVersion);
                     if (Log.IsDebugEnabled)
                     {
-                        Log.Debug($"Received correct version property value for the message {nativeMessageId}");
+                        Log.DebugFormat("Received correct version property value for the message {0}", nativeMessageId);
                     }
                 }
             }
@@ -420,7 +420,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
                 metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE, null);
                 if (Log.IsDebugEnabled)
                 {
-                    Log.Debug($"Missing version property value for the message {nativeMessageId}");
+                    Log.DebugFormat("Missing version property value for the message {0}", nativeMessageId);
                 }
             }
         }

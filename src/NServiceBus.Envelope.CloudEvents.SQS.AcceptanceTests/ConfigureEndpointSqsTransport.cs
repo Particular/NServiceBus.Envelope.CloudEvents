@@ -1,6 +1,5 @@
 namespace NServiceBus.AcceptanceTests;
 
-using System;
 using System.Threading.Tasks;
 using AcceptanceTesting.Customization;
 using AcceptanceTesting.Support;

@@ -50,19 +50,19 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
         headersCopy[Headers.MessageId] = ExtractId(existingHeaders);
         if (Log.IsDebugEnabled)
         {
-            Log.Debug($"Extracted {headersCopy[Headers.MessageId]} for {CloudEventJsonStructuredConstants.IdProperty} field for messageId {nativeMessageId}");
+            Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.MessageId], CloudEventJsonStructuredConstants.IdProperty, nativeMessageId);
         }
 
         headersCopy[Headers.ReplyToAddress] = ExtractSource(existingHeaders);
         if (Log.IsDebugEnabled)
         {
-            Log.Debug($"Extracted {headersCopy[Headers.ReplyToAddress]} for {CloudEventJsonStructuredConstants.SourceProperty} field for messageId {nativeMessageId}");
+            Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.ReplyToAddress], CloudEventJsonStructuredConstants.SourceProperty, nativeMessageId);
         }
 
         headersCopy[Headers.EnclosedMessageTypes] = ExtractType(existingHeaders);
         if (Log.IsDebugEnabled)
         {
-            Log.Debug($"Extracted {headersCopy[Headers.EnclosedMessageTypes]} for {CloudEventJsonStructuredConstants.TypeProperty} field for messageId {nativeMessageId}");
+            Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.EnclosedMessageTypes], CloudEventJsonStructuredConstants.TypeProperty, nativeMessageId);
         }
 
         if (existingHeaders.TryGetValue(CloudEventHttpBinaryConstants.TimeProperty, out var time) && !string.IsNullOrEmpty(time) && time != CloudEventHttpBinaryConstants.NullLiteral)
@@ -74,14 +74,14 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
             headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time));
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"Extracted {headersCopy[Headers.TimeSent]} for {CloudEventJsonStructuredConstants.TimeProperty} field for messageId {nativeMessageId}");
+                Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.TimeSent], CloudEventJsonStructuredConstants.TimeProperty, nativeMessageId);
             }
         }
         else
         {
             if (Log.IsDebugEnabled)
             {
-                Log.Debug($"No time extracted for messageId {nativeMessageId}");
+                Log.DebugFormat("No time extracted for messageId {0}", nativeMessageId);
             }
         }
 
@@ -120,7 +120,7 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
             {
                 if (Log.IsWarnEnabled)
                 {
-                    Log.Warn($"Unexpected CloudEvent version property value {version} for message {nativeMessageId}");
+                    Log.WarnFormat("Unexpected CloudEvent version property value {0} for message {1}", version, nativeMessageId);
                 }
                 metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.HTTP_BINARY, version);
             }
@@ -128,7 +128,7 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
             {
                 if (Log.IsDebugEnabled)
                 {
-                    Log.Debug($"Correct version field  for message {nativeMessageId}");
+                    Log.DebugFormat("Correct version field  for message {0}", nativeMessageId);
                 }
                 metrics.RecordUnexpectedVersion(true, CloudEventsMetrics.CloudEventTypes.HTTP_BINARY,
                     CloudEventHttpBinaryConstants.SupportedVersion);
@@ -138,7 +138,7 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
         {
             if (Log.IsWarnEnabled)
             {
-                Log.Warn($"CloudEvent version property is missing for message id {nativeMessageId}");
+                Log.WarnFormat("CloudEvent version property is missing for message id {0}", nativeMessageId);
             }
             metrics.RecordUnexpectedVersion(false, CloudEventsMetrics.CloudEventTypes.HTTP_BINARY, null);
         }
@@ -154,7 +154,7 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
             {
                 if (Log.IsDebugEnabled)
                 {
-                    Log.Debug($"Message {nativeMessageId} has no property {nativeMessageId}");
+                    Log.DebugFormat("Message {0} has no property {1}", nativeMessageId, header);
                 }
 
                 return false;
@@ -163,7 +163,7 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
 
         if (Log.IsDebugEnabled)
         {
-            Log.Debug($"Message {nativeMessageId} has all required properties");
+            Log.DebugFormat("Message {0} has all required properties", nativeMessageId);
         }
 
         return true;
