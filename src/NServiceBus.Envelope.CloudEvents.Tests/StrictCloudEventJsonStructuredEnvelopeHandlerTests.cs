@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.Envelope.CloudEvents.Tests;
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
@@ -423,7 +424,8 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
     {
         Assert.Throws<JsonException>(() =>
         {
-            EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), new ReadOnlyMemory<byte>());
+            var bodyWriter = new ArrayBufferWriter<byte>();
+            EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, ReadOnlySpan<byte>.Empty, new ContextBag(), bodyWriter);
         });
     }
 
@@ -432,8 +434,8 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
     {
         try
         {
-            EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(),
-                new ReadOnlyMemory<byte>());
+            var bodyWriter = new ArrayBufferWriter<byte>();
+            EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, ReadOnlySpan<byte>.Empty, new ContextBag(), bodyWriter);
         }
         catch (Exception)
         {
@@ -464,7 +466,9 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
         var payloadWithUpperCaseKeys = Payload.ToDictionary(p => p.Key.ToUpper(), p => p.Value);
         string serializedBody = JsonSerializer.Serialize(payloadWithUpperCaseKeys);
         var fullBody = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(serializedBody));
-        return EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), fullBody);
+        var bodyWriter = new ArrayBufferWriter<byte>();
+        var headers = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, fullBody.Span, new ContextBag(), bodyWriter);
+        return headers == null ? null : (headers, new ReadOnlyMemory<byte>(bodyWriter.WrittenSpan.ToArray()));
     }
 
     void AssertTypicalFields((Dictionary<string, string> Headers, ReadOnlyMemory<byte> body) actual, bool shouldHaveTime = true)

@@ -1,5 +1,6 @@
 namespace NServiceBus.Envelope.CloudEvents;
 
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
@@ -30,7 +31,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
     static readonly ILog Log = LogManager.GetLogger<CloudEventJsonStructuredEnvelopeHandler>();
     static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
 
-    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders, ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
+    public Dictionary<string, string>? UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders, ReadOnlySpan<byte> incomingBody, ContextBag extensions, IBufferWriter<byte> bodyWriter)
     {
         var isStrict = config.EnvelopeUnwrappers.Find<CloudEventJsonStructuredEnvelopeUnwrapper>().EnvelopeHandlingMode == JsonStructureEnvelopeHandlingMode.Strict;
 
@@ -38,9 +39,13 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             ? StrictHandler.DeserializeOrThrow(nativeMessageId, incomingHeaders, incomingBody, metrics)
             : PermissiveHandler.DeserializeOrThrow(nativeMessageId, incomingBody, metrics);
 
-        return receivedCloudEvent == null
-            ? null
-            : (ExtractHeaders(nativeMessageId, incomingHeaders, receivedCloudEvent), ExtractBody(nativeMessageId, receivedCloudEvent));
+        if (receivedCloudEvent == null)
+        {
+            return null;
+        }
+
+        ExtractBody(nativeMessageId, receivedCloudEvent, bodyWriter);
+        return ExtractHeaders(nativeMessageId, incomingHeaders, receivedCloudEvent);
     }
 
     Dictionary<string, string> ExtractHeaders(string nativeMessageId, IDictionary<string, string> existingHeaders,
@@ -138,7 +143,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             : cloudEventType;
     }
 
-    static ReadOnlyMemory<byte> ExtractBody(string nativeMessageId, Dictionary<string, JsonProperty> receivedCloudEvent)
+    static void ExtractBody(string nativeMessageId, Dictionary<string, JsonProperty> receivedCloudEvent, IBufferWriter<byte> bodyWriter)
     {
         if (TryGetHeader(receivedCloudEvent, CloudEventJsonStructuredConstants.DataBase64Property, out var base64Body))
         {
@@ -146,7 +151,9 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 Log.DebugFormat("Extracting inner body from {0} for message {1}", CloudEventJsonStructuredConstants.DataBase64Property, nativeMessageId);
             }
-            return new ReadOnlyMemory<byte>(Convert.FromBase64String(base64Body));
+            var bytes = Convert.FromBase64String(base64Body);
+            bodyWriter.Write(bytes);
+            return;
         }
 
         if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.DataProperty, out var data))
@@ -163,8 +170,9 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
                 {
                     Log.DebugFormat("Passing inner body as text for message {0}", nativeMessageId);
                 }
-                return new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(
-                    data.Value.GetString()!));
+                var bytes = Encoding.UTF8.GetBytes(data.Value.GetString()!);
+                bodyWriter.Write(bytes);
+                return;
             }
 
             if (Log.IsDebugEnabled)
@@ -173,8 +181,9 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             }
             if (data.Value.ValueKind is not JsonValueKind.Undefined and not JsonValueKind.Null)
             {
-                return new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(
-                    data.Value.GetRawText()));
+                var bytes = Encoding.UTF8.GetBytes(data.Value.GetRawText());
+                bodyWriter.Write(bytes);
+                return;
             }
         }
 
@@ -182,7 +191,6 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
         {
             Log.DebugFormat("Empty inner body for message {0}", nativeMessageId);
         }
-        return new ReadOnlyMemory<byte>();
     }
 
     static bool TryGetHeader(Dictionary<string, JsonProperty> receivedCloudEvent, string header, [MaybeNullWhen(false)] out string result)
@@ -214,7 +222,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
         internal static Dictionary<string, JsonProperty>? DeserializeOrThrow(string nativeMessageId,
             IDictionary<string, string> incomingHeaders,
-            ReadOnlyMemory<byte> body, CloudEventsMetrics metrics)
+            ReadOnlySpan<byte> body, CloudEventsMetrics metrics)
         {
             if (!HasCorrectContentTypeHeader(incomingHeaders))
             {
@@ -235,7 +243,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             JsonDocument? receivedCloudEvent;
             try
             {
-                receivedCloudEvent = JsonSerializer.Deserialize<JsonDocument>(body.Span, Options);
+                receivedCloudEvent = JsonSerializer.Deserialize<JsonDocument>(body, Options);
             }
             catch (Exception e)
             {
@@ -339,14 +347,14 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
     static class PermissiveHandler
     {
         internal static Dictionary<string, JsonProperty>? DeserializeOrThrow(string nativeMessageId,
-            ReadOnlyMemory<byte> body, CloudEventsMetrics metrics)
+            ReadOnlySpan<byte> body, CloudEventsMetrics metrics)
         {
             metrics.RecordAttemptingToUnwrap(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE);
 
             JsonDocument? receivedCloudEvent;
             try
             {
-                receivedCloudEvent = JsonSerializer.Deserialize<JsonDocument>(body.Span, Options);
+                receivedCloudEvent = JsonSerializer.Deserialize<JsonDocument>(body, Options);
             }
             catch (Exception e)
             {
