@@ -1,6 +1,5 @@
 namespace NServiceBus.Envelope.CloudEvents.Benchmarks;
 
-using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using BenchmarkDotNet.Attributes;
@@ -178,122 +177,102 @@ public class CloudEventJsonStructuredEnvelopeHandlerBenchmarks
     }
 
     [Benchmark(Description = "Permissive mode - Small JSON payload")]
-    public Dictionary<string, string>? PermissiveMode_SmallJson()
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? PermissiveMode_SmallJson()
     {
-        var bodyWriter = new ArrayBufferWriter<byte>();
         return _permissiveHandler!.UnwrapEnvelope(
             _nativeMessageId!,
             _headers!,
-            _smallJsonPayload.AsSpan(),
             new ContextBag(),
-            bodyWriter);
+            _smallJsonPayload);
     }
 
     [Benchmark(Description = "Strict mode - Small JSON payload")]
-    public Dictionary<string, string>? StrictMode_SmallJson()
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? StrictMode_SmallJson()
     {
-        var bodyWriter = new ArrayBufferWriter<byte>();
         return _strictHandler!.UnwrapEnvelope(
             _nativeMessageId!,
             _headers!,
-            _smallJsonPayload.AsSpan(),
             new ContextBag(),
-            bodyWriter);
+            _smallJsonPayload);
     }
 
     [Benchmark(Description = "Permissive mode - Medium JSON payload")]
-    public Dictionary<string, string>? PermissiveMode_MediumJson()
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? PermissiveMode_MediumJson()
     {
-        var bodyWriter = new ArrayBufferWriter<byte>();
         return _permissiveHandler!.UnwrapEnvelope(
             _nativeMessageId!,
             _headers!,
-            _mediumJsonPayload.AsSpan(),
             new ContextBag(),
-            bodyWriter);
+            _mediumJsonPayload);
     }
 
     [Benchmark(Description = "Strict mode - Medium JSON payload")]
-    public Dictionary<string, string>? StrictMode_MediumJson()
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? StrictMode_MediumJson()
     {
-        var bodyWriter = new ArrayBufferWriter<byte>();
         return _strictHandler!.UnwrapEnvelope(
             _nativeMessageId!,
             _headers!,
-            _mediumJsonPayload.AsSpan(),
             new ContextBag(),
-            bodyWriter);
+            _mediumJsonPayload);
     }
 
     [Benchmark(Description = "Permissive mode - Large JSON payload")]
-    public Dictionary<string, string>? PermissiveMode_LargeJson()
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? PermissiveMode_LargeJson()
     {
-        var bodyWriter = new ArrayBufferWriter<byte>();
         return _permissiveHandler!.UnwrapEnvelope(
             _nativeMessageId!,
             _headers!,
-            _largeJsonPayload.AsSpan(),
             new ContextBag(),
-            bodyWriter);
+            _largeJsonPayload);
     }
 
     [Benchmark(Description = "Strict mode - Large JSON payload")]
-    public Dictionary<string, string>? StrictMode_LargeJson()
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? StrictMode_LargeJson()
     {
-        var bodyWriter = new ArrayBufferWriter<byte>();
         return _strictHandler!.UnwrapEnvelope(
             _nativeMessageId!,
             _headers!,
-            _largeJsonPayload.AsSpan(),
             new ContextBag(),
-            bodyWriter);
+            _largeJsonPayload);
     }
 
     [Benchmark(Description = "Permissive mode - Base64 binary payload")]
-    public Dictionary<string, string>? PermissiveMode_Base64()
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? PermissiveMode_Base64()
     {
-        var bodyWriter = new ArrayBufferWriter<byte>();
         return _permissiveHandler!.UnwrapEnvelope(
             _nativeMessageId!,
             _headers!,
-            _base64Payload.AsSpan(),
             new ContextBag(),
-            bodyWriter);
+            _base64Payload);
     }
 
     [Benchmark(Description = "Strict mode - Base64 binary payload")]
-    public Dictionary<string, string>? StrictMode_Base64()
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? StrictMode_Base64()
     {
-        var bodyWriter = new ArrayBufferWriter<byte>();
         return _strictHandler!.UnwrapEnvelope(
             _nativeMessageId!,
             _headers!,
-            _base64Payload.AsSpan(),
             new ContextBag(),
-            bodyWriter);
+            _base64Payload);
     }
 
     [Benchmark(Description = "Permissive mode - XML payload")]
-    public Dictionary<string, string>? PermissiveMode_Xml()
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? PermissiveMode_Xml()
     {
-        var bodyWriter = new ArrayBufferWriter<byte>();
         return _permissiveHandler!.UnwrapEnvelope(
             _nativeMessageId!,
             _headers!,
-            _xmlPayload.AsSpan(),
             new ContextBag(),
-            bodyWriter);
+            _xmlPayload);
     }
 
     [Benchmark(Description = "Strict mode - XML payload", Baseline = true)]
-    public Dictionary<string, string>? StrictMode_Xml()
+    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? StrictMode_Xml()
     {
-        var bodyWriter = new ArrayBufferWriter<byte>();
         return _strictHandler!.UnwrapEnvelope(
             _nativeMessageId!,
             _headers!,
-            _xmlPayload.AsSpan(),
             new ContextBag(),
-            bodyWriter);
+            _xmlPayload);
     }
 }
