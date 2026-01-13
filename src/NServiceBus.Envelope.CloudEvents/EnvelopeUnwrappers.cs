@@ -10,8 +10,6 @@ public class EnvelopeUnwrappers : IEnumerable<EnvelopeUnwrapper>
     OrderedDictionary<Type, EnvelopeUnwrapper> Unwrappers { get; } = new()
     {
         { typeof(CloudEventJsonStructuredEnvelopeUnwrapper), new CloudEventJsonStructuredEnvelopeUnwrapper() },
-        { typeof(CloudEventHttpBinaryEnvelopeUnwrapper), new CloudEventHttpBinaryEnvelopeUnwrapper() },
-        { typeof(CloudEventAmqpBinaryEnvelopeUnwrapper), new CloudEventAmqpBinaryEnvelopeUnwrapper() }
     };
 
     /// <summary>
