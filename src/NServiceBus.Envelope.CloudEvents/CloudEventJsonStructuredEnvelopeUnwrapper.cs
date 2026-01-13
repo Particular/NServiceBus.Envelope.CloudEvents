@@ -12,7 +12,7 @@ public class CloudEventJsonStructuredEnvelopeUnwrapper() : EnvelopeUnwrapper
         RegisterUnwrapper<CloudEventJsonStructuredEnvelopeHandler>(context);
         unwrapperDiagnosticWriter(new
         {
-            EnvelopeHandler = typeof(CloudEventHttpBinaryEnvelopeHandler),
+            EnvelopeHandler = typeof(CloudEventJsonStructuredEnvelopeHandler),
             EnvelopeHandlingMode = EnvelopeHandlingMode.ToString()
         });
     }
