@@ -422,7 +422,7 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
     [Test]
     public void Should_throw_for_invalid_body()
     {
-        Assert.Throws<JsonException>(() =>
+        Assert.Throws(Is.InstanceOf<JsonException>(), () =>
         {
             var bodyWriter = new ArrayBufferWriter<byte>();
             EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, ReadOnlySpan<byte>.Empty, new ContextBag(), bodyWriter);
