@@ -45,6 +45,18 @@ The benchmarks test the `CloudEventJsonStructuredEnvelopeHandler` with various s
 - **Iteration Count**: 10 iterations per benchmark
 - **Baseline**: `StrictMode_Xml` is set as the baseline for comparison
 
+## Current API
+
+The benchmarks test the envelope unwrapping API that returns a tuple:
+
+```csharp
+public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? UnwrapEnvelope(
+    string nativeMessageId,
+    IDictionary<string, string> incomingHeaders,
+    ContextBag extensions,
+    ReadOnlyMemory<byte> incomingBody)
+```
+
 ## Results
 
 Results are stored in `BenchmarkDotNet.Artifacts` directory after running the benchmarks. Look for:
@@ -61,4 +73,4 @@ The benchmarks help identify:
 - Performance differences between Strict and Permissive modes
 - Impact of payload size on processing time
 - Memory allocation patterns
-- Efficiency of the buffer writer API
+- Efficiency of the tuple-based API with ReadOnlyMemory<byte>
