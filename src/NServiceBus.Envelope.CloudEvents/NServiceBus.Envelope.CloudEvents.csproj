@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NServiceBus" Version="10.0.0-cloudevents.1" />
+    <PackageReference Include="NServiceBus" Version="10.0.0-cloudevents.4" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +31,9 @@
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>NServiceBus.Envelope.CloudEvents.ASB.AcceptanceTests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>NServiceBus.Envelope.CloudEvents.Benchmarks</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
 

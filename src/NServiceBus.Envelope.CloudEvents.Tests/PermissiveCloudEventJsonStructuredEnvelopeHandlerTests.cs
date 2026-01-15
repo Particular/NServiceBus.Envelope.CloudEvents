@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.Envelope.CloudEvents.Tests;
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
@@ -285,7 +286,8 @@ class PermissiveCloudEventJsonStructuredEnvelopeHandlerTests
     [Test]
     public void Should_return_null_for_invalid_body()
     {
-        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body)? actual = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), new ReadOnlyMemory<byte>());
+        var bodyWriter = new ArrayBufferWriter<byte>();
+        Dictionary<string, string>? actual = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, ReadOnlySpan<byte>.Empty, new ContextBag(), bodyWriter);
 
         Assert.That(actual, Is.Null);
     }
@@ -293,7 +295,8 @@ class PermissiveCloudEventJsonStructuredEnvelopeHandlerTests
     [Test]
     public void Should_emit_metric_for_invalid_body()
     {
-        EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), new ReadOnlyMemory<byte>());
+        var bodyWriter = new ArrayBufferWriter<byte>();
+        EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, ReadOnlySpan<byte>.Empty, new ContextBag(), bodyWriter);
 
         var attemptCounterSnapshot = AttemptCounter.GetMeasurementSnapshot();
         var invalidMessageCounterSnapshot = InvalidMessageCounter.GetMeasurementSnapshot();
@@ -448,7 +451,9 @@ class PermissiveCloudEventJsonStructuredEnvelopeHandlerTests
         var payloadWithUpperCaseKeys = Payload.ToDictionary(p => p.Key.ToUpper(), p => p.Value);
         string serializedBody = JsonSerializer.Serialize(payloadWithUpperCaseKeys);
         var fullBody = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(serializedBody));
-        return EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), fullBody);
+        var bodyWriter = new ArrayBufferWriter<byte>();
+        var headers = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, fullBody.Span, new ContextBag(), bodyWriter);
+        return headers == null ? null : (headers, new ReadOnlyMemory<byte>(bodyWriter.WrittenSpan.ToArray()));
     }
 
     void AssertTypicalFields((Dictionary<string, string> Headers, ReadOnlyMemory<byte> body) actual, bool shouldHaveTime = true)
