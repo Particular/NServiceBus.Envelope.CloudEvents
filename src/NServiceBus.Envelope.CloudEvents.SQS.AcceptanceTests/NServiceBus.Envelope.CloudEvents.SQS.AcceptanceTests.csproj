@@ -21,5 +21,17 @@
     <ItemGroup>
       <ProjectReference Include="..\NServiceBus.Envelope.CloudEvents\NServiceBus.Envelope.CloudEvents.csproj" />
     </ItemGroup>
+  
+    <ItemGroup>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\CloudEvents\When_amqp_binary_message_received.cs">
+        <Link>CloudEvents\When_amqp_binary_message_received.cs</Link>
+      </Compile>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\CloudEvents\When_http_binary_message_received.cs">
+        <Link>CloudEvents\When_http_binary_message_received.cs</Link>
+      </Compile>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\CloudEvents\When_json_structured_message_received.cs">
+        <Link>CloudEvents\When_json_structured_message_received.cs</Link>
+      </Compile>
+    </ItemGroup>
 
 </Project>
