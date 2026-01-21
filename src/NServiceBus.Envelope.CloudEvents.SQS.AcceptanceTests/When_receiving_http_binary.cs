@@ -1,10 +1,9 @@
 namespace NServiceBus.AcceptanceTests;
 
 using System.Text.Json;
-using System.Threading.Tasks;
-using Amazon.SQS.Model;
 using AcceptanceTesting;
 using AcceptanceTesting.Customization;
+using Amazon.SQS.Model;
 using Configuration.AdvancedExtensibility;
 using EndpointTemplates;
 using Envelope.CloudEvents;

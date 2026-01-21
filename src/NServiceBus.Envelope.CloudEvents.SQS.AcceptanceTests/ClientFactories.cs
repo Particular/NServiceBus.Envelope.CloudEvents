@@ -2,7 +2,6 @@
 
 namespace NServiceBus.Envelope.CloudEvents.SQS.AcceptanceTests;
 
-using System;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.SimpleNotificationService;

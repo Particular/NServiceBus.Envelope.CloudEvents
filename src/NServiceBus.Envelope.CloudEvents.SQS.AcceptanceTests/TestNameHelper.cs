@@ -1,7 +1,5 @@
 namespace NServiceBus.AcceptanceTests;
 
-using System;
-using System.Linq;
 using System.Text;
 
 static class TestNameHelper

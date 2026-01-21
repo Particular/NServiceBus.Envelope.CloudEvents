@@ -1,6 +1,5 @@
 ﻿namespace NServiceBus.Envelope.CloudEvents;
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 

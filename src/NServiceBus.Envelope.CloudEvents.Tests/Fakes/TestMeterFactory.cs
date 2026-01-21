@@ -1,6 +1,5 @@
 ﻿namespace NServiceBus.Envelope.CloudEvents.Tests.Fakes;
 
-using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 
 class TestMeterFactory : IMeterFactory

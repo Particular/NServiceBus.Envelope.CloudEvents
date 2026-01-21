@@ -1,14 +1,11 @@
 ﻿namespace NServiceBus.Envelope.CloudEvents.Tests;
 
-using System;
 using System.Buffers;
-using System.Collections.Generic;
-using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using System.Text;
 using System.Text.Json;
 using Extensibility;
 using Fakes;
-using NServiceBus;
+using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using NUnit.Framework;
 
 [TestFixture]
