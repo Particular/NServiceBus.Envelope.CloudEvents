@@ -5,7 +5,7 @@ using Features;
 /// <summary>
 /// Unwrapper for JSON Structured cloud events envelopes.
 /// </summary>
-public class CloudEventJsonStructuredEnvelopeUnwrapper() : EnvelopeUnwrapper
+public class CloudEventJsonStructuredEnvelopeUnwrapper : EnvelopeUnwrapper
 {
     internal override void RegisterUnwrapper(FeatureConfigurationContext context, Action<object> unwrapperDiagnosticWriter)
     {
