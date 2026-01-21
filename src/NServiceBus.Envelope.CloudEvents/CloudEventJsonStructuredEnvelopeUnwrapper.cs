@@ -18,7 +18,8 @@ public class CloudEventJsonStructuredEnvelopeUnwrapper : EnvelopeUnwrapper
     }
 
     /// <summary>
-    /// Determines the envelope handling behavior. In strict mode the unwrapper expects the correct Content-Type header. In permissive mode
+    /// Determines the envelope handling behavior. In strict mode the unwrapper expects the correct
+    /// Content-Type header. In permissive mode it always tries to parse the incoming envelope.
     /// </summary>
     public JsonStructureEnvelopeHandlingMode EnvelopeHandlingMode { get; set; } = JsonStructureEnvelopeHandlingMode.Strict;
 }
