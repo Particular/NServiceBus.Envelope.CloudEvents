@@ -1,11 +1,7 @@
 namespace NServiceBus.AcceptanceTests;
 
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using AcceptanceTesting.Customization;
-using NServiceBus;
-using NServiceBus.AcceptanceTesting.Support;
+using AcceptanceTesting.Support;
 using NUnit.Framework;
 
 public class ConfigureEndpointAcceptanceTestingTransportWithCloudEvents(

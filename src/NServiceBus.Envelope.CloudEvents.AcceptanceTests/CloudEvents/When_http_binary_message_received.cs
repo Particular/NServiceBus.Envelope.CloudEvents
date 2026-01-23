@@ -1,16 +1,12 @@
-﻿namespace NServiceBus.Envelope.CloudEvents.AcceptanceTests.CloudEvents;
+﻿namespace NServiceBus.AcceptanceTests.CloudEvents;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using AcceptanceTesting;
 using Configuration.AdvancedExtensibility;
-using NServiceBus.AcceptanceTests;
-using NServiceBus.AcceptanceTests.EndpointTemplates;
-using Pipeline;
-using Transport;
+using EndpointTemplates;
+using Envelope.CloudEvents;
+using NServiceBus.Pipeline;
 using NUnit.Framework;
+using Transport;
 
 public class When_http_binary_message_received : NServiceBusAcceptanceTest
 {
@@ -25,7 +21,7 @@ public class When_http_binary_message_received : NServiceBusAcceptanceTest
                 // Azure sends CloudEvents as JSON Structured. Below is the equivalent
                 // in the HTTP Binary format.
                 // The headers are set in the CustomSerializationBehavior.
-                return b.SendLocal(new Message()
+                return b.SendLocal(new Message
                 {
                     Api = "PutBlockList",
                     ClientRequestId = "4c5dd7fb-2c48-4a27-bb30-5361b5de920a",

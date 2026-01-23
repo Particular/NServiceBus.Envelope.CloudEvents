@@ -1,8 +1,6 @@
 namespace NServiceBus.AcceptanceTests;
 
-using System;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Envelope.CloudEvents.SQS.AcceptanceTests;
 using NUnit.Framework;
 

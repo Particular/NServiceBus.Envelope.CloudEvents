@@ -1,16 +1,12 @@
-﻿namespace NServiceBus.Envelope.CloudEvents.AcceptanceTests.CloudEvents;
+﻿namespace NServiceBus.AcceptanceTests.CloudEvents;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using AcceptanceTesting;
 using Configuration.AdvancedExtensibility;
-using NServiceBus.AcceptanceTests;
-using NServiceBus.AcceptanceTests.EndpointTemplates;
-using Pipeline;
-using Transport;
+using EndpointTemplates;
+using Envelope.CloudEvents;
+using NServiceBus.Pipeline;
 using NUnit.Framework;
+using Transport;
 
 public class When_json_structured_message_received : NServiceBusAcceptanceTest
 {
@@ -23,7 +19,7 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
                 // The following represents a CloudEvent that Azure Blob Storage generates
                 // to notify that a new blob item has been created.
                 // The headers are set in the CustomSerializationBehavior.
-                return b.SendLocal(new Message()
+                return b.SendLocal(new Message
                 {
                     SpecVersion = "1.0",
                     Type = "Microsoft.Storage.BlobCreated",
@@ -32,7 +28,7 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
                     Id = "9aeb0fdf-c01e-0131-0922-9eb54906e209",
                     Time = "2019-11-18T15:13:39.4589254Z",
                     Subject = "blobServices/default/containers/{storage-container}/blobs/{new-file}",
-                    Data = new NestedData()
+                    Data = new NestedData
                     {
                         Api = "PutBlockList",
                         ClientRequestId = "4c5dd7fb-2c48-4a27-bb30-5361b5de920a",

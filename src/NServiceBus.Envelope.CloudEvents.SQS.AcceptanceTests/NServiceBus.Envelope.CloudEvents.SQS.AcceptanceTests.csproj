@@ -9,17 +9,29 @@
     <ItemGroup>
       <PackageReference Include="GitHubActionsTestLogger" Version="3.0.1" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-      <PackageReference Include="NServiceBus.AmazonSQS" Version="9.0.0-alpha.5" />
+      <PackageReference Include="NServiceBus.AmazonSQS" Version="9.0.0" />
       <PackageReference Include="NUnit" Version="4.4.0" />
       <PackageReference Include="NUnit3TestAdapter" Version="5.2.0" />
     </ItemGroup>
   
     <ItemGroup>
-      <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="10.0.0-cloudevents.1" />
+      <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="10.1.0-alpha.1" />
     </ItemGroup>
   
     <ItemGroup>
       <ProjectReference Include="..\NServiceBus.Envelope.CloudEvents\NServiceBus.Envelope.CloudEvents.csproj" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\CloudEvents\When_amqp_binary_message_received.cs">
+        <Link>CloudEvents\When_amqp_binary_message_received.cs</Link>
+      </Compile>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\CloudEvents\When_http_binary_message_received.cs">
+        <Link>CloudEvents\When_http_binary_message_received.cs</Link>
+      </Compile>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\CloudEvents\When_json_structured_message_received.cs">
+        <Link>CloudEvents\When_json_structured_message_received.cs</Link>
+      </Compile>
     </ItemGroup>
 
 </Project>

@@ -1,13 +1,11 @@
 ﻿namespace NServiceBus.Envelope.CloudEvents.Tests;
 
-using System;
-using System.Collections.Generic;
+using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using Extensibility;
 using Fakes;
 using Microsoft.Extensions.Diagnostics.Metrics.Testing;
-using NServiceBus;
 using NUnit.Framework;
 
 [TestFixture]
@@ -421,9 +419,10 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
     [Test]
     public void Should_throw_for_invalid_body()
     {
-        Assert.Throws<JsonException>(() =>
+        Assert.Throws(Is.InstanceOf<JsonException>(), () =>
         {
-            EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), new ReadOnlyMemory<byte>());
+            var bodyWriter = new ArrayBufferWriter<byte>();
+            EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, ReadOnlySpan<byte>.Empty, new ContextBag(), bodyWriter);
         });
     }
 
@@ -432,8 +431,8 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
     {
         try
         {
-            EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(),
-                new ReadOnlyMemory<byte>());
+            var bodyWriter = new ArrayBufferWriter<byte>();
+            EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, ReadOnlySpan<byte>.Empty, new ContextBag(), bodyWriter);
         }
         catch (Exception)
         {
@@ -464,7 +463,9 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
         var payloadWithUpperCaseKeys = Payload.ToDictionary(p => p.Key.ToUpper(), p => p.Value);
         string serializedBody = JsonSerializer.Serialize(payloadWithUpperCaseKeys);
         var fullBody = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(serializedBody));
-        return EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, new ContextBag(), fullBody);
+        var bodyWriter = new ArrayBufferWriter<byte>();
+        var headers = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, NativeHeaders, fullBody.Span, new ContextBag(), bodyWriter);
+        return headers == null ? null : (headers, new ReadOnlyMemory<byte>(bodyWriter.WrittenSpan.ToArray()));
     }
 
     void AssertTypicalFields((Dictionary<string, string> Headers, ReadOnlyMemory<byte> body) actual, bool shouldHaveTime = true)

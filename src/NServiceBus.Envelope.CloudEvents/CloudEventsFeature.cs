@@ -3,7 +3,6 @@ namespace NServiceBus.Envelope.CloudEvents;
 using System.Diagnostics.Metrics;
 using Features;
 using Microsoft.Extensions.DependencyInjection;
-using NServiceBus;
 
 class CloudEventsFeature : Feature
 {

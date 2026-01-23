@@ -1,8 +1,8 @@
 namespace NServiceBus.Envelope.CloudEvents.ASB.AcceptanceTests;
 
-using NServiceBus.AcceptanceTesting;
-using NServiceBus.Pipeline;
+using AcceptanceTesting;
 using NUnit.Framework;
+using Pipeline;
 
 class TestIndependenceSkipBehavior : IBehavior<ITransportReceiveContext, ITransportReceiveContext>
 {

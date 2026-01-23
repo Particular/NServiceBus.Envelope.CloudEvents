@@ -1,8 +1,6 @@
 ﻿namespace NServiceBus.Envelope.CloudEvents;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Buffers;
 using Extensibility;
 using Logging;
 
@@ -24,9 +22,8 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
 {
     static readonly ILog Log = LogManager.GetLogger<CloudEventAmqpBinaryEnvelopeHandler>();
 
-    public (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? UnwrapEnvelope(
-        string nativeMessageId, IDictionary<string, string> incomingHeaders,
-        ContextBag extensions, ReadOnlyMemory<byte> incomingBody)
+    public Dictionary<string, string>? UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders,
+        ReadOnlySpan<byte> incomingBody, ContextBag extensions, IBufferWriter<byte> bodyWriter)
     {
         metrics.RecordAttemptingToUnwrap(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
         var caseInsensitiveHeaders = ToCaseInsensitiveDictionary(incomingHeaders);
@@ -34,8 +31,9 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
         {
             return null;
         }
-        var headers = ExtractHeaders(nativeMessageId, caseInsensitiveHeaders);
-        return (headers, incomingBody);
+
+        bodyWriter.Write(incomingBody);
+        return ExtractHeaders(nativeMessageId, caseInsensitiveHeaders);
     }
 
     static Dictionary<string, string> ToCaseInsensitiveDictionary(IDictionary<string, string> incomingHeaders) =>

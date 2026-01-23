@@ -1,13 +1,11 @@
 ﻿namespace NServiceBus.Envelope.CloudEvents.Tests;
 
-using System;
-using System.Collections.Generic;
-using Microsoft.Extensions.Diagnostics.Metrics.Testing;
+using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using Extensibility;
 using Fakes;
-using NServiceBus;
+using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using NUnit.Framework;
 
 [TestFixture]
@@ -224,8 +222,10 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
 
     (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? RunEnvelopHandlerTest()
     {
+        var bodyWriter = new ArrayBufferWriter<byte>();
         var upperCaseHeaders = NativeHeaders.ToDictionary(k => k.Key.ToUpper(), k => k.Value);
-        return EnvelopeHandler.UnwrapEnvelope(NativeMessageId, upperCaseHeaders!, new ContextBag(), Body);
+        var headers = EnvelopeHandler.UnwrapEnvelope(NativeMessageId, upperCaseHeaders!, Body.Span, new ContextBag(), bodyWriter);
+        return headers == null ? null : (headers, bodyWriter.WrittenMemory);
     }
 
     void AssertTypicalFields((Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual, bool shouldHaveTime = true)
