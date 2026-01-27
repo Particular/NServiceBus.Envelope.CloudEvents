@@ -9,7 +9,7 @@ using Envelope.CloudEvents;
 /// </summary>
 public static class CloudEventsEndpointConfigurationExtensions
 {
-    internal const string CloudEventsSetting = "NServiceBus.Envelope.CloudEvents";
+    internal const string CloudEventsConfigurationSettingsKey = "NServiceBus.Envelope.CloudEvents.Configuration";
 
     extension(EndpointConfiguration configuration)
     {
@@ -23,7 +23,7 @@ public static class CloudEventsEndpointConfigurationExtensions
 
             var config = new CloudEventsConfiguration();
             var settings = configuration.GetSettings();
-            settings.Set(CloudEventsSetting, config);
+            settings.Set(CloudEventsConfigurationSettingsKey, config);
             return config;
         }
     }

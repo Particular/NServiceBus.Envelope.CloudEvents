@@ -8,7 +8,7 @@ class CloudEventsFeature : Feature
 {
     protected override void Setup(FeatureConfigurationContext context)
     {
-        var cloudEventsConfiguration = context.Settings.Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsSetting);
+        var cloudEventsConfiguration = context.Settings.Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsConfigurationSettingsKey);
         _ = context.Services.AddSingleton(cloudEventsConfiguration);
         _ = context.Services.AddSingleton(sp =>
         {
