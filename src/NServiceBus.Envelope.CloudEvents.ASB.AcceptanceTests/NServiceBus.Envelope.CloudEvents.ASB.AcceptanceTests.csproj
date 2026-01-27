@@ -36,6 +36,9 @@
       <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\CloudEvents\When_json_structured_message_received.cs">
         <Link>CloudEvents\When_json_structured_message_received.cs</Link>
       </Compile>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\EndpointConfigurationExtensions.cs">
+        <Link>EndpointConfigurationExtensions.cs</Link>
+      </Compile>
     </ItemGroup>
 
 </Project>

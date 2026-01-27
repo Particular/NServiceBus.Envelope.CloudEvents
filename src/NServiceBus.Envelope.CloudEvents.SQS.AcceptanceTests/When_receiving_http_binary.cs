@@ -93,7 +93,7 @@ public class When_receiving_http_binary : NServiceBusAcceptanceTest
             c.UseSerialization<SystemJsonSerializer>().Options(jsonSerializerOptions);
 
             var settings = c.GetSettings();
-            var config = settings.Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsSetting);
+            var config = settings.Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsConfigurationSettingsKey);
             config.TypeMappings.Add("com.example.someevent", [typeof(Message)]);
         });
 

@@ -81,7 +81,7 @@ public class When_json_structured_message_received : NServiceBusAcceptanceTest
         {
             EndpointSetup<DefaultServer>(c =>
             {
-                var config = c.GetSettings().Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsSetting);
+                var config = c.GetCloudEventsConfiguration();
                 config.TypeMappings.Add("Microsoft.Storage.BlobCreated", [typeof(Message)]);
 
                 c.Pipeline.Register("CustomSerializationBehavior", new CustomSerializationBehavior(),
