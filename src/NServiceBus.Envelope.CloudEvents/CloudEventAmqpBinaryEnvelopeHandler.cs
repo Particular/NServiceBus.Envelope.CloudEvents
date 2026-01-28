@@ -25,13 +25,13 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
     public Dictionary<string, string>? UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders,
         ReadOnlySpan<byte> incomingBody, ContextBag extensions, IBufferWriter<byte> bodyWriter)
     {
-        metrics.EnvelopeUnwrapped(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
         var caseInsensitiveHeaders = ToCaseInsensitiveDictionary(incomingHeaders);
         if (!IsValidMessage(nativeMessageId, caseInsensitiveHeaders))
         {
             return null;
         }
 
+        metrics.EnvelopeUnwrapped(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
         bodyWriter.Write(incomingBody);
         return ExtractHeaders(nativeMessageId, caseInsensitiveHeaders);
     }
