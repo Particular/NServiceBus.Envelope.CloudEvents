@@ -105,6 +105,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
     {
         if (!HasRequiredHeaders(nativeMessageId, headers))
         {
+            metrics.MessageInvalid(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
             return false;
         }
 

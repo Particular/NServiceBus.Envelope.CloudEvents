@@ -107,6 +107,7 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
     {
         if (!HasRequiredHeaders(nativeMessageId, headers))
         {
+            metrics.MessageInvalid(CloudEventsMetrics.CloudEventTypes.HTTP_BINARY);
             return false;
         }
 

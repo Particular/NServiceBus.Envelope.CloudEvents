@@ -174,14 +174,21 @@ class CloudEventAmqpBinaryEnvelopeHandlerTests
     [TestCase("cloudEvents:type")]
     [TestCase("cloudEvents:id")]
     [TestCase("cloudEvents:source")]
-    public void Should_not_record_metric_when_property_is_missing(string property)
+    public void Should_record_invalid_message_metric_when_property_is_missing(string property)
     {
         NativeHeaders.Remove(property);
         RunEnvelopHandlerTest();
 
         var invalidMessageCounterSnapshot = InvalidMessageCounter.GetMeasurementSnapshot();
 
-        Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(0));
+        Assert.Multiple(() =>
+        {
+            Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(1));
+            Assert.That(invalidMessageCounterSnapshot[0].Value, Is.EqualTo(1));
+            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(TestEndpointName));
+            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
+                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY));
+        });
     }
 
     (Dictionary<string, string> headers, ReadOnlyMemory<byte> body)? RunEnvelopHandlerTest()
