@@ -21,14 +21,17 @@ sealed class CloudEventsMetrics : IDisposable
 
         invalidMessageCounter = meter.CreateCounter<long>(
             "nservicebus.envelope.cloud_events.received.invalid_message",
+            unit: "{message}",
             description: "Number of invalid messages received.");
 
         unexpectedVersionCounter = meter.CreateCounter<long>(
             "nservicebus.envelope.cloud_events.received.unexpected_version",
+            unit: "{message}",
             description: "Number of received messages with unrecognized version type.");
 
         unwrappingAttemptCounter = meter.CreateCounter<long>(
             "nservicebus.envelope.cloud_events.received.unwrapping_attempt",
+            unit: "{message}",
             description: "Total number of unwrapping attempts.");
     }
 
