@@ -25,7 +25,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
     public Dictionary<string, string>? UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders,
         ReadOnlySpan<byte> incomingBody, ContextBag extensions, IBufferWriter<byte> bodyWriter)
     {
-        metrics.RecordAttemptingToUnwrap(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
+        metrics.EnvelopeUnwrapped(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
         var caseInsensitiveHeaders = ToCaseInsensitiveDictionary(incomingHeaders);
         if (!IsValidMessage(nativeMessageId, caseInsensitiveHeaders))
         {
@@ -116,7 +116,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
                 {
                     Log.WarnFormat("Unexpected CloudEvent version property value {0} for message {1}", version, nativeMessageId);
                 }
-                metrics.RecordUnexpectedVersion(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, version);
+                metrics.VersionMismatch(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, version);
             }
             else
             {
@@ -132,7 +132,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
             {
                 Log.WarnFormat("CloudEvent version property is missing for message id {0}", nativeMessageId);
             }
-            metrics.RecordUnexpectedVersion(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, null);
+            metrics.VersionMismatch(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY, null);
         }
 
         return true;

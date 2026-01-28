@@ -32,7 +32,7 @@ sealed class CloudEventsMetrics : IDisposable
             description: "Total number of unwrapping attempts.");
     }
 
-    public void RecordInvalidMessage(string envelopeType)
+    public void MessageInvalid(string envelopeType)
     {
         if (!invalidMessageCounter.Enabled)
         {
@@ -46,7 +46,7 @@ sealed class CloudEventsMetrics : IDisposable
         invalidMessageCounter.Add(1, tags);
     }
 
-    public void RecordUnexpectedVersion(string envelopeType, string? version)
+    public void VersionMismatch(string envelopeType, string? version)
     {
         if (!unexpectedVersionCounter.Enabled)
         {
@@ -61,7 +61,7 @@ sealed class CloudEventsMetrics : IDisposable
         unexpectedVersionCounter.Add(1, tags);
     }
 
-    public void RecordAttemptingToUnwrap(string envelopeType)
+    public void EnvelopeUnwrapped(string envelopeType)
     {
         if (!unwrappingAttemptCounter.Enabled)
         {
