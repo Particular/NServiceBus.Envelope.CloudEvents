@@ -350,7 +350,6 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
                 {
                     Log.DebugFormat("Message {0} has incorrect CloudEvents JSON Structured Content-Type header and won't be unwrapped", nativeMessageId);
                 }
-                metrics.RecordNotAttemptingToUnwrap(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
                 return null;
             }
 
@@ -429,7 +428,6 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 Log.DebugFormat("Message {0} has all the required fields", nativeMessageId);
             }
-            metrics.RecordValidMessage(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT);
 
             if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.VersionProperty, out var version))
             {
@@ -449,7 +447,6 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
                     {
                         Log.DebugFormat("Message {0} has correct version field", nativeMessageId);
                     }
-                    metrics.RecordExpectedVersion(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT, CloudEventJsonStructuredConstants.SupportedVersion);
                 }
             }
             else
@@ -515,7 +512,6 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             {
                 Log.DebugFormat("Received correct payload for the message {0}", nativeMessageId);
             }
-            metrics.RecordValidMessage(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE);
 
             if (receivedCloudEvent.TryGetValue(CloudEventJsonStructuredConstants.VersionProperty, out var version))
             {
@@ -533,7 +529,6 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
                 }
                 else
                 {
-                    metrics.RecordExpectedVersion(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE, CloudEventJsonStructuredConstants.SupportedVersion);
                     if (Log.IsDebugEnabled)
                     {
                         Log.DebugFormat("Received correct version property value for the message {0}", nativeMessageId);
@@ -542,7 +537,6 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
             }
             else
             {
-                metrics.RecordExpectedVersion(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE, null);
                 if (Log.IsDebugEnabled)
                 {
                     Log.DebugFormat("Missing version property value for the message {0}", nativeMessageId);

@@ -108,8 +108,6 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
             return false;
         }
 
-        metrics.RecordValidMessage(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY);
-
         if (headers.TryGetValue(CloudEventAmqpBinaryConstants.VersionProperty, out var version))
         {
             if (version != CloudEventAmqpBinaryConstants.SupportedVersion)
@@ -126,8 +124,6 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
                 {
                     Log.DebugFormat("Correct version field  for message {0}", nativeMessageId);
                 }
-                metrics.RecordExpectedVersion(CloudEventsMetrics.CloudEventTypes.AMQP_BINARY,
-                    CloudEventAmqpBinaryConstants.SupportedVersion);
             }
         }
         else

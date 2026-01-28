@@ -110,8 +110,6 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
             return false;
         }
 
-        metrics.RecordValidMessage(CloudEventsMetrics.CloudEventTypes.HTTP_BINARY);
-
         if (headers.TryGetValue(CloudEventHttpBinaryConstants.VersionProperty, out var version))
         {
             if (version != CloudEventHttpBinaryConstants.SupportedVersion)
@@ -128,8 +126,6 @@ class CloudEventHttpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
                 {
                     Log.DebugFormat("Correct version field  for message {0}", nativeMessageId);
                 }
-                metrics.RecordExpectedVersion(CloudEventsMetrics.CloudEventTypes.HTTP_BINARY,
-                    CloudEventHttpBinaryConstants.SupportedVersion);
             }
         }
         else
