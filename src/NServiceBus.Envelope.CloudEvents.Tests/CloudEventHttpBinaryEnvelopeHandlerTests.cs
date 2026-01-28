@@ -133,7 +133,7 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
             Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
                 Is.EqualTo(CloudEventsMetrics.CloudEventTypes.HTTP_BINARY));
             Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.version"],
-                Is.EqualTo(null));
+                Is.EqualTo("missing"));
         });
     }
 

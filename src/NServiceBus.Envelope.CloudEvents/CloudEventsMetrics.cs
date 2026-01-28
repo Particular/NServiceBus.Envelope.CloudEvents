@@ -59,7 +59,7 @@ sealed class CloudEventsMetrics : IDisposable
         TagList tags;
         tags.Add("nservicebus.endpoint", endpointName);
         tags.Add("nservicebus.envelope.cloud_events.received.envelope_type", envelopeType);
-        tags.Add("nservicebus.envelope.cloud_events.received.version", version);
+        tags.Add("nservicebus.envelope.cloud_events.received.version", version ?? "missing");
 
         unexpectedVersionCounter.Add(1, tags);
     }

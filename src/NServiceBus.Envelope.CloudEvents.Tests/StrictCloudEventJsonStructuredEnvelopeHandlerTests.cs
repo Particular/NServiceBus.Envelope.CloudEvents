@@ -195,7 +195,7 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
             Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
                 Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_STRICT));
             Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.version"],
-                Is.EqualTo(null));
+                Is.EqualTo("missing"));
         });
     }
 
