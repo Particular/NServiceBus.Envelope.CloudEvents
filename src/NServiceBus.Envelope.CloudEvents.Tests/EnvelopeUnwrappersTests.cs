@@ -10,7 +10,7 @@ public class EnvelopeUnwrappersTests
     {
         var unwrappers = new EnvelopeUnwrappers();
         var unwrapper = unwrappers.Find<CloudEventAmqpBinaryEnvelopeUnwrapper>();
-        unwrappers.Remove(unwrapper);
+        unwrappers.Remove(unwrapper!);
 
         var shouldBeNull = unwrappers.Find<CloudEventAmqpBinaryEnvelopeUnwrapper>();
 
