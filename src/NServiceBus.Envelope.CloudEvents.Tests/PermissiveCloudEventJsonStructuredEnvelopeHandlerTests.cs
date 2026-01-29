@@ -180,62 +180,6 @@ class PermissiveCloudEventJsonStructuredEnvelopeHandlerTests
     }
 
     [Test]
-    public void Should_report_metric_when_unmarshaling_regular_message()
-    {
-        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
-
-        var invalidMessageCounterSnapshot = InvalidMessageCounter.GetMeasurementSnapshot();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(1));
-            Assert.That(invalidMessageCounterSnapshot[0].Value, Is.EqualTo(0));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(TestEndpointName));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
-                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE));
-        });
-    }
-
-    [Test]
-    public void Should_report_metric_when_unmarshaling_message_with_version()
-    {
-        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
-
-        var unexpectedVersionCounterSnapshot = UnexpectedVersionCounter.GetMeasurementSnapshot();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(unexpectedVersionCounterSnapshot.Count, Is.EqualTo(1));
-            Assert.That(unexpectedVersionCounterSnapshot[0].Value, Is.EqualTo(0));
-            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(TestEndpointName));
-            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
-                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE));
-            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.version"],
-                Is.EqualTo("1.0"));
-        });
-    }
-
-    [Test]
-    public void Should_report_metric_when_unmarshaling_message_without_version()
-    {
-        Payload.Remove("specversion");
-        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
-
-        var unexpectedVersionCounterSnapshot = UnexpectedVersionCounter.GetMeasurementSnapshot();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(unexpectedVersionCounterSnapshot.Count, Is.EqualTo(1));
-            Assert.That(unexpectedVersionCounterSnapshot[0].Value, Is.EqualTo(0));
-            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(TestEndpointName));
-            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
-                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE));
-            Assert.That(unexpectedVersionCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.version"],
-                Is.EqualTo(null));
-        });
-    }
-
-    [Test]
     public void Should_report_metric_when_unmarshaling_message_with_unrecognized_version()
     {
         Payload["specversion"] = "wrong";
@@ -332,26 +276,6 @@ class PermissiveCloudEventJsonStructuredEnvelopeHandlerTests
     }
 
     [Test]
-    [TestCase("id")]
-    [TestCase("source")]
-    public void Should_record_metric_when_property_is_missing(string property)
-    {
-        Payload.Remove(property);
-        RunEnvelopHandlerTest();
-
-        var invalidMessageCounterSnapshot = InvalidMessageCounter.GetMeasurementSnapshot();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(1));
-            Assert.That(invalidMessageCounterSnapshot[0].Value, Is.EqualTo(0));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(TestEndpointName));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
-                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE));
-        });
-    }
-
-    [Test]
     public void Should_not_record_metric_when_type_property_is_missing()
     {
         try
@@ -369,25 +293,6 @@ class PermissiveCloudEventJsonStructuredEnvelopeHandlerTests
     }
 
     [Test]
-    public void Should_record_metric_when_data_properties_are_missing()
-    {
-        Payload.Remove("data");
-        Payload.Remove("data_base64");
-        RunEnvelopHandlerTest();
-
-        var invalidMessageCounterSnapshot = InvalidMessageCounter.GetMeasurementSnapshot();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(1));
-            Assert.That(invalidMessageCounterSnapshot[0].Value, Is.EqualTo(0));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(TestEndpointName));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
-                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE));
-        });
-    }
-
-    [Test]
     public void Should_not_throw_when_data_property_is_present() =>
         Assert.DoesNotThrow(() =>
         {
@@ -397,25 +302,6 @@ class PermissiveCloudEventJsonStructuredEnvelopeHandlerTests
         });
 
     [Test]
-    public void Should_record_metric_when_data_property_is_present()
-    {
-        Payload["data"] = "{}";
-        Payload.Remove("data_base64");
-        RunEnvelopHandlerTest();
-
-        var invalidMessageCounterSnapshot = InvalidMessageCounter.GetMeasurementSnapshot();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(1));
-            Assert.That(invalidMessageCounterSnapshot[0].Value, Is.EqualTo(0));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(TestEndpointName));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
-                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE));
-        });
-    }
-
-    [Test]
     public void Should_not_throw_when_data_base64_property_is_present() =>
         Assert.DoesNotThrow(() =>
         {
@@ -423,25 +309,6 @@ class PermissiveCloudEventJsonStructuredEnvelopeHandlerTests
             Payload.Remove("data");
             RunEnvelopHandlerTest();
         });
-
-    [Test]
-    public void Should_record_metric_when_data_base64_property_is_present()
-    {
-        Payload["data_base64"] = "e30=";
-        Payload.Remove("data");
-        RunEnvelopHandlerTest();
-
-        var invalidMessageCounterSnapshot = InvalidMessageCounter.GetMeasurementSnapshot();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(invalidMessageCounterSnapshot.Count, Is.EqualTo(1));
-            Assert.That(invalidMessageCounterSnapshot[0].Value, Is.EqualTo(0));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.endpoint"], Is.EqualTo(TestEndpointName));
-            Assert.That(invalidMessageCounterSnapshot[0].Tags["nservicebus.envelope.cloud_events.received.envelope_type"],
-                Is.EqualTo(CloudEventsMetrics.CloudEventTypes.JSON_STRUCTURED_PERMISSIVE));
-        });
-    }
 
     (Dictionary<string, string>, ReadOnlyMemory<byte>)? RunEnvelopHandlerTest()
     {
