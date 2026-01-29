@@ -2,6 +2,7 @@ namespace NServiceBus.Envelope.CloudEvents;
 
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Extensibility;
@@ -58,7 +59,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
     public Dictionary<string, string>? UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders, ReadOnlySpan<byte> incomingBody, ContextBag extensions, IBufferWriter<byte> bodyWriter)
     {
-        var isStrict = config.EnvelopeUnwrappers.Find<CloudEventJsonStructuredEnvelopeUnwrapper>().EnvelopeHandlingMode == JsonStructureEnvelopeHandlingMode.Strict;
+        var isStrict = config.EnvelopeUnwrappers.Find<CloudEventJsonStructuredEnvelopeUnwrapper>()!.EnvelopeHandlingMode == JsonStructureEnvelopeHandlingMode.Strict;
 
         CloudEventProperties? receivedCloudEvent = isStrict
             ? StrictHandler.DeserializeOrThrow(nativeMessageId, incomingHeaders, incomingBody, metrics)
@@ -231,7 +232,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
              * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
              * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
              */
-            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(timeValue));
+            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(timeValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
             if (Log.IsDebugEnabled)
             {
                 Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.TimeSent], CloudEventJsonStructuredConstants.TimeProperty, nativeMessageId);
