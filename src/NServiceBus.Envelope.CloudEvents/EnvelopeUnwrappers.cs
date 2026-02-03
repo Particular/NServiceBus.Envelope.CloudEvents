@@ -19,7 +19,14 @@ public class EnvelopeUnwrappers : IEnumerable<EnvelopeUnwrapper>
     /// </summary>
     /// <typeparam name="TUnwrapper">The unwrapper type.</typeparam>
     /// <returns>The envelope unwrapper or <c>null</c> if no unwrapper con be found.</returns>
-    public TUnwrapper Find<TUnwrapper>() where TUnwrapper : EnvelopeUnwrapper => (TUnwrapper)Unwrappers[typeof(TUnwrapper)];
+    public TUnwrapper? Find<TUnwrapper>() where TUnwrapper : EnvelopeUnwrapper
+    {
+        if (Unwrappers.TryGetValue(typeof(TUnwrapper), out var unwrapper))
+        {
+            return (TUnwrapper)unwrapper;
+        }
+        return null;
+    }
 
     /// <summary>
     /// Clear the envelope unwrappers. 

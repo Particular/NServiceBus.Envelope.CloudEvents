@@ -47,7 +47,7 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
                 { "com.example.someevent", [typeof(MyEvent)] },
             }
         };
-        cloudEventsConfiguration.EnvelopeUnwrappers.Find<CloudEventJsonStructuredEnvelopeUnwrapper>()
+        cloudEventsConfiguration.EnvelopeUnwrappers.Find<CloudEventJsonStructuredEnvelopeUnwrapper>()!
             .EnvelopeHandlingMode = JsonStructureEnvelopeHandlingMode.Strict;
 
         NativeHeaders = new Dictionary<string, string>

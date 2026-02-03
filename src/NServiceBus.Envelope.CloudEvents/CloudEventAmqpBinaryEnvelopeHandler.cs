@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.Envelope.CloudEvents;
 
 using System.Buffers;
+using System.Globalization;
 using Extensibility;
 using Logging;
 
@@ -70,7 +71,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
                  * If what comes in is something similar to "2018-04-05T17:31:00Z", compliant with the CloudEvents spec
                  * and ISO 8601, NServiceBus will not be happy and later in the pipeline there will be a parsing exception
                  */
-            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time));
+            headersCopy[Headers.TimeSent] = DateTimeOffsetHelper.ToWireFormattedString(DateTimeOffset.Parse(time, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
             if (Log.IsDebugEnabled)
             {
                 Log.DebugFormat("Extracted {0} for {1} field for messageId {2}", headersCopy[Headers.TimeSent], CloudEventJsonStructuredConstants.TimeProperty, nativeMessageId);
