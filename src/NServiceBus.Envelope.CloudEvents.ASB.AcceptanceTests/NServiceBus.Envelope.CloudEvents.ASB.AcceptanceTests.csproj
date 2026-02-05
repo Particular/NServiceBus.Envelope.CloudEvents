@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>NServiceBus.AcceptanceTests</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="GitHubActionsTestLogger" Version="3.0.1" />
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+      <PackageReference Include="NUnit" Version="4.4.0" />
+      <PackageReference Include="NUnit3TestAdapter" Version="5.2.0" />
+      <PackageReference Include="System.IO.Hashing" Version="10.0.2" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <PackageReference Include="NServiceBus.Transport.AzureServiceBus" Version="6.0.0" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="10.1.0" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <ProjectReference Include="..\NServiceBus.Envelope.CloudEvents\NServiceBus.Envelope.CloudEvents.csproj" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\CloudEvents\When_amqp_binary_message_received.cs">
+        <Link>CloudEvents\When_amqp_binary_message_received.cs</Link>
+      </Compile>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\CloudEvents\When_http_binary_message_received.cs">
+        <Link>CloudEvents\When_http_binary_message_received.cs</Link>
+      </Compile>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\CloudEvents\When_json_structured_message_received.cs">
+        <Link>CloudEvents\When_json_structured_message_received.cs</Link>
+      </Compile>
+      <Compile Include="..\NServiceBus.Envelope.CloudEvents.AcceptanceTests\EndpointConfigurationExtensions.cs">
+        <Link>EndpointConfigurationExtensions.cs</Link>
+      </Compile>
+    </ItemGroup>
+
+</Project>
