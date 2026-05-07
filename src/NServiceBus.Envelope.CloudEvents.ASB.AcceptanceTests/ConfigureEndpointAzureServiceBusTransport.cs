@@ -1,8 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using NServiceBus.AcceptanceTesting.Customization;
+﻿using NServiceBus.AcceptanceTesting.Customization;
 using NServiceBus.AcceptanceTesting.Support;
 using NServiceBus.Envelope.CloudEvents.ASB.AcceptanceTests;
-using NServiceBus.MessageMutator;
 
 public class ConfigureEndpointAzureServiceBusTransport : IConfigureEndpointTestExecution
 {
@@ -34,8 +32,8 @@ public class ConfigureEndpointAzureServiceBusTransport : IConfigureEndpointTestE
         recoverability.Immediate(config => config.NumberOfRetries(0));
         recoverability.Delayed(config => config.NumberOfRetries(0));
 
-        configuration.RegisterComponents(c => c.AddSingleton<IMutateOutgoingTransportMessages, TestIndependenceMutator>());
-        configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
+        configuration.Pipeline.Register("TestIndependenceHeaderBehavior", typeof(TestIndependenceHeaderehavior), "Appends the TestRunId to outgoing messages");
+        configuration.Pipeline.Register("TestIndependenceSkipBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
 
         configuration.EnforcePublisherMetadataRegistration(endpointName, publisherMetadata);
 
