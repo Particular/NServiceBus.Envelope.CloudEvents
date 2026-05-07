@@ -32,7 +32,7 @@ public class ConfigureEndpointAzureServiceBusTransport : IConfigureEndpointTestE
         recoverability.Immediate(config => config.NumberOfRetries(0));
         recoverability.Delayed(config => config.NumberOfRetries(0));
 
-        configuration.Pipeline.Register("TestIndependenceHeaderBehavior", typeof(TestIndependenceHeaderehavior), "Appends the TestRunId to outgoing messages");
+        configuration.Pipeline.Register("TestIndependenceHeaderBehavior", typeof(TestIndependenceHeaderBehavior), "Appends the TestRunId to outgoing messages");
         configuration.Pipeline.Register("TestIndependenceSkipBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
 
         configuration.EnforcePublisherMetadataRegistration(endpointName, publisherMetadata);

@@ -4,7 +4,7 @@ using AcceptanceTesting;
 using Microsoft.Extensions.DependencyInjection;
 using Pipeline;
 
-class TestIndependenceHeaderehavior : IBehavior<IOutgoingPhysicalMessageContext, IOutgoingPhysicalMessageContext>
+class TestIndependenceHeaderBehavior : IBehavior<IOutgoingPhysicalMessageContext, IOutgoingPhysicalMessageContext>
 {
     public Task Invoke(IOutgoingPhysicalMessageContext context, Func<IOutgoingPhysicalMessageContext, Task> next)
     {
