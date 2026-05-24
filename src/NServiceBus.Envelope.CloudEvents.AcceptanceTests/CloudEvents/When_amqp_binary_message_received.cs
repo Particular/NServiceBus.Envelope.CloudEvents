@@ -1,9 +1,7 @@
 ﻿namespace NServiceBus.AcceptanceTests.CloudEvents;
 
 using AcceptanceTesting;
-using Configuration.AdvancedExtensibility;
 using EndpointTemplates;
-using Envelope.CloudEvents;
 using NServiceBus.Pipeline;
 using NUnit.Framework;
 using Transport;
@@ -34,8 +32,7 @@ public class When_amqp_binary_message_received : NServiceBusAcceptanceTest
                     Sequencer = "000000000000000000000000000099240000000000c41c18"
                 });
             }))
-            .Done(c => c.MessageReceived)
-            .Run().ConfigureAwait(false);
+            .Run();
 
         using (Assert.EnterMultipleScope())
         {
@@ -66,17 +63,15 @@ public class When_amqp_binary_message_received : NServiceBusAcceptanceTest
         }
     }
 
-    class Context : ScenarioContext
+    public class Context : ScenarioContext
     {
-        public bool MessageReceived { get; set; }
         public string MessageId { get; set; }
         public Dictionary<string, string> Headers { get; set; }
     }
 
-    class Endpoint : EndpointConfigurationBuilder
+    public class Endpoint : EndpointConfigurationBuilder
     {
-        public Endpoint()
-        {
+        public Endpoint() =>
             EndpointSetup<DefaultServer>(c =>
             {
                 var config = c.GetCloudEventsConfiguration();
@@ -85,15 +80,15 @@ public class When_amqp_binary_message_received : NServiceBusAcceptanceTest
                 c.Pipeline.Register("CustomSerializationBehavior", new CustomSerializationBehavior(),
                     "Serializing message");
             });
-        }
 
-        class Handler(Context testContext) : IHandleMessages<Message>
+        [Handler]
+        public class Handler(Context testContext) : IHandleMessages<Message>
         {
             public Task Handle(Message message, IMessageHandlerContext context)
             {
                 testContext.MessageId = context.MessageId;
                 testContext.Headers = context.MessageHeaders.ToDictionary(x => x.Key, x => x.Value);
-                testContext.MessageReceived = true;
+                testContext.MarkAsCompleted();
 
                 return Task.CompletedTask;
             }
