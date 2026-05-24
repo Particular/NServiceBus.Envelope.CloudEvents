@@ -16,13 +16,7 @@ public partial class TestSuiteConstraints
 
     public bool SupportsPurgeOnStartup => false;
 
-    public IConfigureEndpointTestExecution CreateTransportConfiguration()
-    {
-        return new ConfigureEndpointAcceptanceTestingTransportWithCloudEvents(true, true);
-    }
+    public IConfigureEndpointTestExecution CreateTransportConfiguration() => new ConfigureEndpointAcceptanceTestingTransportWithCloudEvents(true, true);
 
-    public IConfigureEndpointTestExecution CreatePersistenceConfiguration()
-    {
-        return new ConfigureEndpointAcceptanceTestingPersistence();
-    }
+    public IConfigureEndpointTestExecution CreatePersistenceConfiguration() => new ConfigureEndpointAcceptanceTestingPersistence();
 }
