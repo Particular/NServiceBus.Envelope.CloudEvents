@@ -21,9 +21,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="NServiceBus.Envelope.CloudEvents.Tests" />
-    <InternalsVisibleTo Include="NServiceBus.Envelope.CloudEvents.AcceptanceTests" />
-    <InternalsVisibleTo Include="NServiceBus.Envelope.CloudEvents.SQS.AcceptanceTests" />
-    <InternalsVisibleTo Include="NServiceBus.Envelope.CloudEvents.ASB.AcceptanceTests" />
   </ItemGroup>
 
 </Project>
