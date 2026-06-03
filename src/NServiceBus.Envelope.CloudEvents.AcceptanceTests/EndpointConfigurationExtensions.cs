@@ -7,6 +7,6 @@ static class EndpointConfigurationExtensions
 {
     extension(EndpointConfiguration endpointConfiguration)
     {
-        public CloudEventsConfiguration GetCloudEventsConfiguration() => endpointConfiguration.GetSettings().Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsConfigurationSettingsKey);
+        public CloudEventsConfiguration GetCloudEventsConfiguration() => endpointConfiguration.GetSettings().Get<CloudEventsConfiguration>();
     }
 }

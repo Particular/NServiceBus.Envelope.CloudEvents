@@ -1,6 +1,3 @@
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("NServiceBus.Envelope.CloudEvents.ASB.AcceptanceTests")]
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("NServiceBus.Envelope.CloudEvents.AcceptanceTests")]
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("NServiceBus.Envelope.CloudEvents.SQS.AcceptanceTests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("NServiceBus.Envelope.CloudEvents.Tests")]
 namespace NServiceBus
 {
