@@ -5,12 +5,10 @@ using Configuration.AdvancedExtensibility;
 using Envelope.CloudEvents;
 
 /// <summary>
-/// 
+/// Provide methods for configuring cloud events
 /// </summary>
 public static class CloudEventsEndpointConfigurationExtensions
 {
-    internal const string CloudEventsConfigurationSettingsKey = "NServiceBus.Envelope.CloudEvents.Configuration";
-
     extension(EndpointConfiguration configuration)
     {
         /// <summary>
@@ -23,7 +21,7 @@ public static class CloudEventsEndpointConfigurationExtensions
 
             var config = new CloudEventsConfiguration();
             var settings = configuration.GetSettings();
-            settings.Set(CloudEventsConfigurationSettingsKey, config);
+            settings.Set(config);
             return config;
         }
     }
