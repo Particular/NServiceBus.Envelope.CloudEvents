@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="10.2.7" />
-    <PackageReference Include="NServiceBus.Transport.AzureServiceBus" Version="6.4.1" />
+    <PackageReference Include="NServiceBus.Transport.AzureServiceBus" Version="6.4.2" />
   </ItemGroup>
 
   <ItemGroup>
