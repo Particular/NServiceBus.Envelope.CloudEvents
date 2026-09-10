@@ -60,6 +60,6 @@ jobs:
           azure-credentials: ${{ secrets.AZURE_ACI_CREDENTIALS }}
           tag: CloudEvents
       - name: Run tests
-        uses: Particular/run-tests-action@v1.8.0
+        uses: Particular/run-tests-action@v1.9.0
         with:
           reset-script: dotnet run --project src/targets
