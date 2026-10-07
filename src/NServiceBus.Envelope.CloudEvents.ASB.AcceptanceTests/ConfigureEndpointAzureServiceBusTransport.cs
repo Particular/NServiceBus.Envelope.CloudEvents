@@ -17,17 +17,7 @@ public class ConfigureEndpointAzureServiceBusTransport : IConfigureEndpointTestE
             throw new InvalidOperationException("envvar AzureServiceBus_ConnectionString not set");
         }
 
-#pragma warning disable CS0618 // Type or member is obsolete
-        var topology = TopicTopology.MigrateFromSingleDefaultTopic();
-#pragma warning restore CS0618 // Type or member is obsolete
-        topology.OverrideSubscriptionNameFor(endpointName, endpointName.Shorten());
-
-        foreach (var eventType in publisherMetadata.Publishers.SelectMany(p => p.Events))
-        {
-            topology.EventToMigrate(eventType, ruleNameOverride: eventType.FullName.Shorten());
-        }
-
-        var transport = new AzureServiceBusTransport(connectionString, topology)
+        var transport = new AzureServiceBusTransport(connectionString, TopicTopology.Default)
         {
             // Shared scenarios hard-code some endpoint names, so every parallel fixture gets its own hierarchy below the namespace.
             HierarchyNamespaceOptions = new HierarchyNamespaceOptions { HierarchyNamespace = FixtureToken() }
