@@ -12,7 +12,7 @@ public static class ClientFactories
     public static IAmazonSQS CreateSqsClient(Action<AmazonSQSConfig>? configure = null)
     {
         var credentials = new EnvironmentVariablesAWSCredentials();
-        var config = new AmazonSQSConfig();
+        var config = new AmazonSQSConfig { MaxErrorRetry = 10 };
         configure?.Invoke(config);
         return new AmazonSQSClient(credentials, config);
     }
@@ -21,7 +21,7 @@ public static class ClientFactories
         Action<AmazonSimpleNotificationServiceConfig>? configure = null)
     {
         var credentials = new EnvironmentVariablesAWSCredentials();
-        var config = new AmazonSimpleNotificationServiceConfig();
+        var config = new AmazonSimpleNotificationServiceConfig { MaxErrorRetry = 10 };
         configure?.Invoke(config);
         return new AmazonSimpleNotificationServiceClient(credentials, config);
     }

@@ -31,16 +31,32 @@ jobs:
         env:
           SECRETS_AVAILABLE: ${{ secrets.SECRETS_AVAILABLE }}
         run: exit $(If ($env:SECRETS_AVAILABLE -eq 'true') { 0 } Else { 1 })
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
+      - parallel:
+          - name: Checkout
+            uses: actions/checkout@v7.0.1
+            with:
+              fetch-depth: 0
+          - name: Azure login
+            uses: azure/login@v3.1.0
+            with:
+              creds: ${{ secrets.AZURE_ACI_CREDENTIALS }}
+              enable-AzPSSession: true
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6.0.0
         with:
           global-json-file: global.json
       - name: Build
+        id: build
         run: dotnet build src --configuration Release
+        background: true
+      - name: Setup Azure Service Bus
+        uses: Particular/setup-azureservicebus-action@v2.5.0
+        with:
+          connection-string-name: AzureServiceBus_ConnectionString
+          azure-credentials: ${{ secrets.AZURE_ACI_CREDENTIALS }}
+          tag: CloudEvents
+      - name: Wait for build
+        wait: build
       - name: Upload packages
         if: matrix.name == 'Windows'
         uses: actions/upload-artifact@v7.0.2
@@ -48,18 +64,7 @@ jobs:
           name: NuGet packages
           path: nugets/
           retention-days: 7
-      - name: Azure login
-        uses: azure/login@v3.1.0
-        with:
-          creds: ${{ secrets.AZURE_ACI_CREDENTIALS }}
-          enable-AzPSSession: true
-      - name: Setup Azure Service Bus
-        uses: Particular/setup-azureservicebus-action@v2.5.0
-        with:
-          connection-string-name: AzureServiceBus_ConnectionString
-          azure-credentials: ${{ secrets.AZURE_ACI_CREDENTIALS }}
-          tag: CloudEvents
       - name: Run tests
         uses: Particular/run-tests-action@v1.9.0
         with:
-          reset-script: dotnet run --project src/targets
+          max-parallel: 4
