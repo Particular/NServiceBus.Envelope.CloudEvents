@@ -48,9 +48,7 @@ namespace NServiceBus.AcceptanceTests.CloudEvents
             using (Assert.EnterMultipleScope())
             {
                 // The mapped type is known, so the behavior should match the non CloudEvents case.
-                // Currently the envelope handler writes Type.ToString(), i.e. the full name without the
-                // assembly. Type.GetType cannot load it and the registry has no metadata for it, so the
-                // deserializer is invoked without any message type and fails with a MessageDeserializationException.
+                Assert.That(context.EnclosedMessageTypes, Is.EqualTo(typeof(UnscannedMessage).AssemblyQualifiedName));
                 Assert.That(context.Exception, Is.Not.InstanceOf<MessageDeserializationException>(), context.Exception?.ToString());
                 Assert.That(context.Exception.Message, Does.Contain("No handlers could be found"));
             }
@@ -67,9 +65,8 @@ namespace NServiceBus.AcceptanceTests.CloudEvents
 
             using (Assert.EnterMultipleScope())
             {
-                // Once the type is known to the registry, the full name fallback resolves it and the
-                // behavior matches the non CloudEvents case.
-                Assert.That(context.EnclosedMessageTypes, Is.EqualTo(typeof(UnscannedMessage).FullName));
+                // Explicitly registering the mapped type keeps working.
+                Assert.That(context.EnclosedMessageTypes, Is.EqualTo(typeof(UnscannedMessage).AssemblyQualifiedName));
                 Assert.That(context.Exception, Is.Not.InstanceOf<MessageDeserializationException>());
                 Assert.That(context.Exception.Message, Does.Contain("No handlers could be found"));
             }

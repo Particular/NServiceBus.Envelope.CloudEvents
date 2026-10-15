@@ -14,4 +14,11 @@ public class CloudEventsConfiguration
     /// The envelope unwrappers to use to handle incoming message envelops.
     /// </summary>
     public EnvelopeUnwrappers EnvelopeUnwrappers { get; } = [];
+
+    // Assembly qualified names allow Core to load the mapped types even when they are not registered
+    // in the message metadata registry, and ';' is the separator Core expects for multiple types.
+    internal string GetEnclosedMessageTypes(string cloudEventType) =>
+        TypeMappings.TryGetValue(cloudEventType, out var typeMapping)
+            ? string.Join(';', typeMapping.Select(t => t.AssemblyQualifiedName))
+            : cloudEventType;
 }

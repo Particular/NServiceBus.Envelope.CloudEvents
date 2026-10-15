@@ -265,9 +265,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
     string ExtractType(CloudEventProperties receivedCloudEvent)
     {
         var cloudEventType = receivedCloudEvent[CloudEventJsonStructuredConstants.TypeProperty].GetString();
-        return config.TypeMappings.TryGetValue(cloudEventType, out var typeMapping)
-            ? string.Join(',', typeMapping)
-            : cloudEventType;
+        return config.GetEnclosedMessageTypes(cloudEventType);
     }
 
     static void ExtractBody(string nativeMessageId, CloudEventProperties receivedCloudEvent, IBufferWriter<byte> bodyWriter)

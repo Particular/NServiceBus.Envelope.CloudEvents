@@ -213,7 +213,7 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
 
             Assert.That(actual.Headers.ContainsKey("data"), Is.False);
             Assert.That(actual.Headers.ContainsKey("some_other_property"), Is.False);
-            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.CloudEventHttpBinaryEnvelopeHandlerTests+MyEvent"));
+            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo(typeof(MyEvent).AssemblyQualifiedName));
 
             Assert.That(attemptCounterSnapshot.Count, Is.EqualTo(1));
             Assert.That(attemptCounterSnapshot[0].Value, Is.EqualTo(1));

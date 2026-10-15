@@ -342,7 +342,7 @@ class PermissiveCloudEventJsonStructuredEnvelopeHandlerTests
                 Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo("2023-10-10 10:00:00:000000 Z"));
             }
 
-            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.PermissiveCloudEventJsonStructuredEnvelopeHandlerTests+MyEvent"));
+            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo(typeof(MyEvent).AssemblyQualifiedName));
             Assert.That(actual.Headers["type"], Is.EqualTo(Payload["type"]));
             Assert.That(actual.Headers["some_other_property"], Is.EqualTo(Payload["some_other_property"]));
             Assert.That(actual.Headers.ContainsKey("data"), Is.False);

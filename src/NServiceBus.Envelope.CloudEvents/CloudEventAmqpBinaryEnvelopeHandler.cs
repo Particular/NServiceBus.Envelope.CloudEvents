@@ -93,9 +93,7 @@ class CloudEventAmqpBinaryEnvelopeHandler(CloudEventsMetrics metrics, CloudEvent
     string ExtractType(IDictionary<string, string> existingHeaders)
     {
         var cloudEventType = ExtractHeader(existingHeaders, CloudEventAmqpBinaryConstants.TypeProperty);
-        return config.TypeMappings.TryGetValue(cloudEventType, out var typeMapping)
-            ? string.Join(',', typeMapping)
-            : cloudEventType;
+        return config.GetEnclosedMessageTypes(cloudEventType);
     }
 
     static string ExtractSource(IDictionary<string, string> existingHeaders) => ExtractHeader(existingHeaders, CloudEventAmqpBinaryConstants.SourceProperty);
