@@ -69,7 +69,7 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
         UnexpectedVersionCounter = new MetricCollector<long>(MeterFactory, "NServiceBus.Envelope.CloudEvents",
             "nservicebus.envelope.cloud_events.received.unexpected_version");
 
-        EnvelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration);
+        EnvelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration.Clone());
     }
 
     [Test]
@@ -114,6 +114,7 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
     public void Should_map_type_to_all_assembly_qualified_names_separated_by_semicolon()
     {
         cloudEventsConfiguration.TypeMappings["com.example.someevent"] = [typeof(MyEvent), typeof(MyOtherEvent)];
+        EnvelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration.Clone());
 
         (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
 

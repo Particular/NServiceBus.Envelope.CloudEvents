@@ -9,7 +9,7 @@ class CloudEventsFeature : Feature
 {
     protected override void Setup(FeatureConfigurationContext context)
     {
-        var cloudEventsConfiguration = context.Settings.Get<CloudEventsConfiguration>();
+        var cloudEventsConfiguration = context.Settings.Get<CloudEventsConfiguration>().Clone();
 
         // Mapped types might not be discovered by assembly scanning or registered through handlers,
         // e.g. when handlers are registered for one of their interfaces. Registering them ensures

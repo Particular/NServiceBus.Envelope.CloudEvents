@@ -59,9 +59,7 @@ class CloudEventJsonStructuredEnvelopeHandler(CloudEventsMetrics metrics, CloudE
 
     public Dictionary<string, string>? UnwrapEnvelope(string nativeMessageId, IDictionary<string, string> incomingHeaders, ReadOnlySpan<byte> incomingBody, ContextBag extensions, IBufferWriter<byte> bodyWriter)
     {
-        var isStrict = config.EnvelopeUnwrappers.Find<CloudEventJsonStructuredEnvelopeUnwrapper>()!.EnvelopeHandlingMode == JsonStructureEnvelopeHandlingMode.Strict;
-
-        CloudEventProperties? receivedCloudEvent = isStrict
+        CloudEventProperties? receivedCloudEvent = config.IsStrictJsonStructuredHandling
             ? StrictHandler.DeserializeOrThrow(nativeMessageId, incomingHeaders, incomingBody, metrics)
             : PermissiveHandler.DeserializeOrThrow(nativeMessageId, incomingBody, metrics);
 

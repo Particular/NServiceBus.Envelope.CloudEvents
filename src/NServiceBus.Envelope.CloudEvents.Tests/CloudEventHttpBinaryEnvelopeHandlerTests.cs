@@ -62,7 +62,7 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
         UnexpectedVersionCounter = new MetricCollector<long>(MeterFactory, "NServiceBus.Envelope.CloudEvents",
             "nservicebus.envelope.cloud_events.received.unexpected_version");
 
-        EnvelopeHandler = new CloudEventHttpBinaryEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration);
+        EnvelopeHandler = new CloudEventHttpBinaryEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration.Clone());
     }
 
     [Test]

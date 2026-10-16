@@ -67,7 +67,7 @@ class PermissiveCloudEventJsonStructuredEnvelopeHandlerTests
         UnexpectedVersionCounter = new MetricCollector<long>(MeterFactory, "NServiceBus.Envelope.CloudEvents",
             "nservicebus.envelope.cloud_events.received.unexpected_version");
 
-        EnvelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration);
+        EnvelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration.Clone());
     }
 
     [Test]
