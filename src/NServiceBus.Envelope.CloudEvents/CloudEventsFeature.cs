@@ -3,12 +3,18 @@ namespace NServiceBus.Envelope.CloudEvents;
 using System.Diagnostics.Metrics;
 using Features;
 using Microsoft.Extensions.DependencyInjection;
+using Unicast.Messages;
 
 class CloudEventsFeature : Feature
 {
     protected override void Setup(FeatureConfigurationContext context)
     {
-        var cloudEventsConfiguration = context.Settings.Get<CloudEventsConfiguration>(CloudEventsEndpointConfigurationExtensions.CloudEventsConfigurationSettingsKey);
+        var cloudEventsConfiguration = context.Settings.Get<CloudEventsConfiguration>().Clone();
+
+        // Mapped types might not be discovered by assembly scanning or registered through handlers,
+        // e.g. when handlers are registered for one of their interfaces. Registering them ensures
+        // the types can be resolved when dynamic type loading is disabled.
+        context.Settings.Get<MessageMetadataRegistry>().RegisterMessageTypes(cloudEventsConfiguration.TypeMappings.Values.SelectMany(types => types));
         _ = context.Services.AddSingleton(cloudEventsConfiguration);
         _ = context.Services.AddSingleton(sp =>
         {
