@@ -62,7 +62,7 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
         UnexpectedVersionCounter = new MetricCollector<long>(MeterFactory, "NServiceBus.Envelope.CloudEvents",
             "nservicebus.envelope.cloud_events.received.unexpected_version");
 
-        EnvelopeHandler = new CloudEventHttpBinaryEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration);
+        EnvelopeHandler = new CloudEventHttpBinaryEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration.Clone());
     }
 
     [Test]
@@ -213,7 +213,7 @@ class CloudEventHttpBinaryEnvelopeHandlerTests
 
             Assert.That(actual.Headers.ContainsKey("data"), Is.False);
             Assert.That(actual.Headers.ContainsKey("some_other_property"), Is.False);
-            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.CloudEventHttpBinaryEnvelopeHandlerTests+MyEvent"));
+            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo(typeof(MyEvent).AssemblyQualifiedName));
 
             Assert.That(attemptCounterSnapshot.Count, Is.EqualTo(1));
             Assert.That(attemptCounterSnapshot[0].Value, Is.EqualTo(1));
