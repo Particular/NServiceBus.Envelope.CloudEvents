@@ -38,8 +38,20 @@ namespace NServiceBus.AcceptanceTests.CloudEvents
                     .When(SendCloudEvent))
                 .Run();
 
-            // Currently fails with a MessageDeserializationException because the EnclosedMessageTypes header
-            // contains the concrete type full name without the assembly, which cannot be resolved.
+            Assert.That(context.Handled, Is.True, context.Exception?.ToString());
+        }
+
+        [Test]
+        public async Task With_cloud_events_and_dynamic_type_loading_disabled_the_message_is_handled()
+        {
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<CloudEventsEndpointWithoutDynamicTypeLoading>(b => b
+                    .DoNotFailOnErrorMessages()
+                    .When(SendCloudEvent))
+                .Run();
+
+            // The assembly qualified name cannot be loaded dynamically, the mapped type must be registered
+            // by the CloudEvents feature for the message to be handled.
             Assert.That(context.Handled, Is.True, context.Exception?.ToString());
         }
 
@@ -52,7 +64,7 @@ namespace NServiceBus.AcceptanceTests.CloudEvents
                     .When(SendCloudEvent))
                 .Run();
 
-            // Registering the concrete type is a viable workaround: the full name fallback resolves it.
+            // Explicitly registering the mapped type keeps working.
             Assert.That(context.Handled, Is.True, context.Exception?.ToString());
         }
 
@@ -138,6 +150,29 @@ namespace NServiceBus.AcceptanceTests.CloudEvents
                     c.GetCloudEventsConfiguration().TypeMappings.Add(CloudEventType, [typeof(ConcreteEvent)]);
                     c.Pipeline.Register(new CloudEventsHeadersBehavior(), "Replaces NServiceBus headers with the CloudEvents content type");
                     c.GetSettings().GetOrCreate<MessageMetadataRegistry>().RegisterMessageTypes([typeof(ConcreteEvent)]);
+                });
+
+            [Handler]
+            public class OrderHandler(Context testContext) : IHandleMessages<IOrderEvent>
+            {
+                public Task Handle(IOrderEvent message, IMessageHandlerContext context)
+                {
+                    testContext.Handled = true;
+                    testContext.MarkAsCompleted();
+                    return Task.CompletedTask;
+                }
+            }
+        }
+
+        public class CloudEventsEndpointWithoutDynamicTypeLoading : EndpointConfigurationBuilder
+        {
+            public CloudEventsEndpointWithoutDynamicTypeLoading() =>
+                EndpointSetup<DefaultServer>((c, r) =>
+                {
+                    ConfigureCommon(c, (Context)r.ScenarioContext);
+                    c.UseSerialization<SystemJsonSerializer>().DisableDynamicTypeLoading();
+                    c.GetCloudEventsConfiguration().TypeMappings.Add(CloudEventType, [typeof(ConcreteEvent)]);
+                    c.Pipeline.Register(new CloudEventsHeadersBehavior(), "Replaces NServiceBus headers with the CloudEvents content type");
                 });
 
             [Handler]

@@ -25,6 +25,8 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
 
     class MyEvent;
 
+    class MyOtherEvent;
+
     [SetUp]
     public void SetUp()
     {
@@ -67,7 +69,7 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
         UnexpectedVersionCounter = new MetricCollector<long>(MeterFactory, "NServiceBus.Envelope.CloudEvents",
             "nservicebus.envelope.cloud_events.received.unexpected_version");
 
-        EnvelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration);
+        EnvelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration.Clone());
     }
 
     [Test]
@@ -106,6 +108,27 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
             AssertTypicalFields(actual);
             Assert.That(actual.Body.Span.SequenceEqual(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(cloudEventBody))));
         });
+    }
+
+    [Test]
+    public void Should_map_type_to_all_assembly_qualified_names_separated_by_semicolon()
+    {
+        cloudEventsConfiguration.TypeMappings["com.example.someevent"] = [typeof(MyEvent), typeof(MyOtherEvent)];
+        EnvelopeHandler = new CloudEventJsonStructuredEnvelopeHandler(new(MeterFactory, TestEndpointName), cloudEventsConfiguration.Clone());
+
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
+
+        Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo($"{typeof(MyEvent).AssemblyQualifiedName};{typeof(MyOtherEvent).AssemblyQualifiedName}"));
+    }
+
+    [Test]
+    public void Should_pass_through_unmapped_type()
+    {
+        Payload["type"] = "com.example.unmapped";
+
+        (Dictionary<string, string> Headers, ReadOnlyMemory<byte> Body) actual = RunEnvelopHandlerTest()!.Value;
+
+        Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("com.example.unmapped"));
     }
 
     [Test]
@@ -388,7 +411,7 @@ class StrictCloudEventJsonStructuredEnvelopeHandlerTests
                 Assert.That(actual.Headers[Headers.TimeSent], Is.EqualTo("2023-10-10 10:00:00:000000 Z"));
             }
 
-            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo("NServiceBus.Envelope.CloudEvents.Tests.StrictCloudEventJsonStructuredEnvelopeHandlerTests+MyEvent"));
+            Assert.That(actual.Headers[Headers.EnclosedMessageTypes], Is.EqualTo(typeof(MyEvent).AssemblyQualifiedName));
             Assert.That(actual.Headers["id"], Is.EqualTo(Payload["id"]));
             Assert.That(actual.Headers["type"], Is.EqualTo(Payload["type"]));
             Assert.That(actual.Headers["source"], Is.EqualTo(Payload["source"]));
